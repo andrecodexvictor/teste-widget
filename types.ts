@@ -1,4 +1,5 @@
 
+
 export enum ThemeMode {
   KAWAII = 'kawaii',
   MARIO = 'mario',
@@ -112,3 +113,25 @@ export const DEFAULT_SETTINGS: WidgetSettings = {
     "Chat Picks Game"
   ]
 };
+
+// --- StreamElements Interfaces ---
+
+export interface StreamElementsEventDetail {
+  listener: string;
+  event: {
+    name?: string;
+    amount?: number;
+    message?: string;
+    username?: string;
+    type?: string;
+    gifted?: boolean;
+    sender?: string;
+    bulkGifted?: boolean;
+    isCommunityGift?: boolean;
+    playedAsCommunityGift?: boolean;
+  };
+}
+
+export interface StreamElementsEvent {
+  detail: StreamElementsEventDetail;
+}

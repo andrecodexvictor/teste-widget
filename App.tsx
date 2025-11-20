@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { WidgetSettings, DEFAULT_SETTINGS, Donation, ThemeMode, WidgetPosition, GoalMode } from './types';
+import { WidgetSettings, DEFAULT_SETTINGS, Donation, ThemeMode, WidgetPosition, GoalMode, StreamElementsEvent } from './types';
 import { KawaiiWidget } from './components/KawaiiWidget';
 import { SettingsPanel } from './components/SettingsPanel';
 import { RefreshCw, Monitor, Heart } from 'lucide-react';
@@ -15,8 +15,20 @@ const App: React.FC = () => {
   const [isShaking, setIsShaking] = useState(false);
   const [isCelebration, setIsCelebration] = useState(false);
   const [showRoulette, setShowRoulette] = useState(false);
+  
+  // State for Overlay Mode (active when ?overlay=true in URL)
+  const [isOverlayMode, setIsOverlayMode] = useState(false);
 
-  // Simulate adding a donation
+  // Check URL parameters on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('overlay') === 'true') {
+        setIsOverlayMode(true);
+        document.body.style.backgroundColor = 'transparent';
+    }
+  }, []);
+
+  // Simulate adding a donation (used by both manual buttons and SE events)
   const simulateDonation = useCallback((amount: number, username: string, message: string) => {
     const newDonation: Donation = {
       id: Date.now().toString(),
@@ -71,11 +83,79 @@ const App: React.FC = () => {
     }
   }, [settings.currentAmount, settings.goalAmount, settings.goalMode, settings.subGoalInterval, settings.enableRoulette]);
 
-  // Layout for the "App" (Split screen: Settings vs Preview)
+  // StreamElements Event Listener
+  useEffect(() => {
+    const onEventReceived = (obj: CustomEvent | any) => {
+        if (!obj.detail) return;
+        const { listener, event } = obj.detail;
+
+        console.log('StreamElements Event:', listener, event);
+
+        if (listener === 'tip-latest') {
+            simulateDonation(event.amount, event.name, event.message);
+        }
+        
+        // You can add more listeners here (e.g. 'subscriber-latest' if you want to convert subs to points)
+    };
+
+    // StreamElements initial load (for session data if needed)
+    const onWidgetLoad = (obj: CustomEvent | any) => {
+        console.log('Widget Loaded', obj.detail);
+        // Here you could sync initial goal state if you were pulling from SE session data
+    };
+
+    window.addEventListener('onEventReceived', onEventReceived);
+    window.addEventListener('onWidgetLoad', onWidgetLoad);
+
+    return () => {
+        window.removeEventListener('onEventReceived', onEventReceived);
+        window.removeEventListener('onWidgetLoad', onWidgetLoad);
+    };
+  }, [simulateDonation]);
+
+
+  // Helper to determine absolute positioning classes based on settings
+  const getPositionClasses = (pos: WidgetPosition) => {
+    switch (pos) {
+        case WidgetPosition.TOP_LEFT: return 'top-0 left-0 m-8 origin-top-left';
+        case WidgetPosition.TOP_RIGHT: return 'top-0 right-0 m-8 origin-top-right';
+        case WidgetPosition.BOTTOM_LEFT: return 'bottom-0 left-0 m-8 origin-bottom-left';
+        case WidgetPosition.BOTTOM_RIGHT: return 'bottom-0 right-0 m-8 origin-bottom-right';
+        case WidgetPosition.CENTER_TOP: return 'top-0 left-1/2 -translate-x-1/2 mt-8 origin-top';
+        case WidgetPosition.CENTER_BOTTOM: return 'bottom-0 left-1/2 -translate-x-1/2 mb-8 origin-bottom';
+        default: return 'bottom-0 left-1/2 -translate-x-1/2 mb-8 origin-bottom';
+    }
+  };
+
+  // --- RENDER: OVERLAY MODE (For OBS) ---
+  if (isOverlayMode) {
+      return (
+          <div className="min-h-screen w-full overflow-hidden relative bg-transparent">
+              <div 
+                  className={`absolute ${getPositionClasses(settings.position)} transition-all duration-300`}
+                  style={{ 
+                      transform: `scale(${settings.scale})`,
+                      opacity: settings.opacity,
+                  }}
+              >
+                  <KawaiiWidget 
+                      settings={settings} 
+                      donations={donations} 
+                      isShaking={isShaking}
+                      isCelebration={isCelebration}
+                      showRoulette={showRoulette}
+                      onRouletteComplete={() => setShowRoulette(false)}
+                  />
+              </div>
+          </div>
+      );
+  }
+
+  // --- RENDER: EDITOR MODE (Default) ---
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row overflow-hidden font-sans text-gray-800">
       
-      {/* Left Side: Control Panel (Simulating StreamElements Editor) */}
+      {/* Left Side: Control Panel */}
       <div className="w-full md:w-1/3 lg:w-1/4 bg-white shadow-xl z-20 flex flex-col h-screen border-r border-gray-200">
         <div className="p-6 bg-indigo-600 text-white shadow-md">
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -94,11 +174,11 @@ const App: React.FC = () => {
         </div>
 
         <div className="p-4 bg-gray-50 border-t border-gray-200 text-center text-xs text-gray-500">
-           Built for OBS Browser Source
+           Append <b>?overlay=true</b> to URL for OBS
         </div>
       </div>
 
-      {/* Right Side: Preview Area (Green Screen / Transparency simulation) */}
+      {/* Right Side: Preview Area */}
       <div className="flex-1 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-200 flex items-center justify-center overflow-hidden p-8">
         
         <div className="absolute top-4 right-4 bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs font-mono text-gray-500 border border-gray-300">
