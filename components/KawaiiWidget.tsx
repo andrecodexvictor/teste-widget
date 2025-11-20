@@ -120,10 +120,12 @@ const Mascot: React.FC<{
     type: MascotType, 
     theme: ThemeMode, 
     isCelebrating: boolean, 
+    isReacting: boolean, // New prop for donation reaction
     scale: number,
     customClass?: string 
-}> = ({ type, theme, isCelebrating, scale, customClass }) => {
+}> = ({ type, theme, isCelebrating, isReacting, scale, customClass }) => {
     const bounce = isCelebrating ? 'animate-bounce' : 'animate-float';
+    const happy = isCelebrating || isReacting;
     
     // Default positioning for Standard Mode if customClass isn't provided
     const positionClass = customClass || "absolute -top-16 -left-6 w-24 h-24";
@@ -138,10 +140,21 @@ const Mascot: React.FC<{
               {type === MascotType.CAT_GAMER && (
                   <div className="relative">
                       <div className={`w-16 h-14 ${theme === ThemeMode.NEON ? 'bg-purple-600 border-2 border-cyan-400' : 'bg-white border-2 border-pink-300'} rounded-2xl flex items-center justify-center`}>
-                         <div className="flex gap-2 mt-1">
-                            <div className="w-2 h-2 bg-gray-800 rounded-full animate-pulse"></div>
-                            <div className="w-2 h-2 bg-gray-800 rounded-full animate-pulse"></div>
+                         <div className="flex gap-2 mt-1 items-center justify-center w-full">
+                            {happy ? (
+                                <>
+                                    <div className="w-2 h-1.5 border-t-2 border-gray-800 rounded-full mt-1"></div>
+                                    <div className="w-2 h-1.5 border-t-2 border-gray-800 rounded-full mt-1"></div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="w-2 h-2 bg-gray-800 rounded-full animate-pulse"></div>
+                                    <div className="w-2 h-2 bg-gray-800 rounded-full animate-pulse"></div>
+                                </>
+                            )}
                          </div>
+                         {happy && <div className="absolute top-8 w-2 h-1 border-b-2 border-gray-800 rounded-full"></div>}
+
                          <div className="absolute -top-3 left-0 w-4 h-4 bg-inherit border-inherit rounded-tl-lg"></div>
                          <div className="absolute -top-3 right-0 w-4 h-4 bg-inherit border-inherit rounded-tr-lg"></div>
                          {/* Headphones */}
@@ -154,28 +167,56 @@ const Mascot: React.FC<{
               {type === MascotType.SHIBA && (
                    <div className="w-16 h-16 bg-orange-300 rounded-full border-2 border-white flex items-center justify-center relative overflow-hidden">
                        <div className="w-10 h-8 bg-white rounded-full absolute bottom-0"></div>
-                       <div className="flex gap-3 z-10 mb-1">
-                           <div className="w-2 h-2 bg-black rounded-full"></div>
-                           <div className="w-2 h-2 bg-black rounded-full"></div>
+                       <div className="flex gap-3 z-10 mb-1 items-center">
+                           {happy ? (
+                                <>
+                                    <div className="text-xs font-bold text-black tracking-widest">{"> <"}</div>
+                                </>
+                           ) : (
+                               <>
+                                    <div className="w-2 h-2 bg-black rounded-full"></div>
+                                    <div className="w-2 h-2 bg-black rounded-full"></div>
+                               </>
+                           )}
                        </div>
+                       {happy && <div className="absolute bottom-3 w-2 h-3 bg-red-400 rounded-b-full z-20"></div>}
+                       
                        <div className="absolute -top-0 left-1 w-4 h-4 bg-orange-300 rotate-45"></div>
                        <div className="absolute -top-0 right-1 w-4 h-4 bg-orange-300 rotate-45"></div>
                    </div>
               )}
               {type === MascotType.LUMA && (
                   <div className="text-yellow-400 filter drop-shadow-[0_0_10px_rgba(255,255,0,0.6)]">
-                      <Star size={64} fill="currentColor" strokeWidth={1} className="animate-spin-slow" />
+                      <Star size={64} fill="currentColor" strokeWidth={1} className={`${happy ? 'animate-spin' : 'animate-spin-slow'}`} />
                       <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-1 h-3 bg-black rounded-full mr-2"></div>
-                          <div className="w-1 h-3 bg-black rounded-full"></div>
+                           {happy ? (
+                               <div className="flex gap-2">
+                                   <div className="w-2 h-2 border-b-2 border-black rounded-full"></div>
+                                   <div className="w-2 h-2 border-b-2 border-black rounded-full"></div>
+                               </div>
+                           ) : (
+                               <>
+                                   <div className="w-1 h-3 bg-black rounded-full mr-2"></div>
+                                   <div className="w-1 h-3 bg-black rounded-full"></div>
+                               </>
+                           )}
                       </div>
                   </div>
               )}
               {type === MascotType.ROBOT && (
                   <div className="bg-gray-800 border-2 border-cyan-500 p-2 rounded-lg">
                       <div className="w-12 h-8 bg-cyan-900 flex items-center justify-center gap-1">
-                          <div className="w-3 h-3 bg-cyan-400 animate-pulse"></div>
-                          <div className="w-3 h-3 bg-cyan-400 animate-pulse delay-75"></div>
+                          {happy ? (
+                              <div className="flex gap-1">
+                                <Heart size={10} className="text-pink-400 fill-current animate-bounce" />
+                                <Heart size={10} className="text-pink-400 fill-current animate-bounce delay-75" />
+                              </div>
+                          ) : (
+                              <>
+                                <div className="w-3 h-3 bg-cyan-400 animate-pulse"></div>
+                                <div className="w-3 h-3 bg-cyan-400 animate-pulse delay-75"></div>
+                              </>
+                          )}
                       </div>
                       <div className="h-1 w-full bg-gray-700 mt-1"></div>
                   </div>
@@ -183,16 +224,25 @@ const Mascot: React.FC<{
               {type === MascotType.BUNNY && (
                   <div className="w-16 h-16 bg-white rounded-full border-2 border-pink-200 relative flex items-center justify-center">
                       {/* Ears */}
-                      <div className="absolute -top-6 left-2 w-3 h-8 bg-white border-2 border-pink-200 rounded-full -rotate-12">
+                      <div className={`absolute -top-6 left-2 w-3 h-8 bg-white border-2 border-pink-200 rounded-full ${happy ? '-rotate-[20deg]' : '-rotate-12'} transition-transform`}>
                           <div className="w-1 h-5 bg-pink-200 rounded-full mx-auto mt-1"></div>
                       </div>
-                      <div className="absolute -top-6 right-2 w-3 h-8 bg-white border-2 border-pink-200 rounded-full rotate-12">
+                      <div className={`absolute -top-6 right-2 w-3 h-8 bg-white border-2 border-pink-200 rounded-full ${happy ? 'rotate-[20deg]' : 'rotate-12'} transition-transform`}>
                           <div className="w-1 h-5 bg-pink-200 rounded-full mx-auto mt-1"></div>
                       </div>
                       {/* Face */}
-                      <div className="flex gap-4 mt-1">
-                          <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
-                          <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                      <div className="flex gap-4 mt-1 items-center">
+                          {happy ? (
+                              <>
+                                <div className="w-2 h-1 border-t-2 border-gray-800 rounded-full mt-1"></div>
+                                <div className="w-2 h-1 border-t-2 border-gray-800 rounded-full mt-1"></div>
+                              </>
+                          ) : (
+                              <>
+                                <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                                <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                              </>
+                          )}
                       </div>
                       <div className="absolute top-10 w-2 h-1 bg-pink-300 rounded-full"></div>
                   </div>
@@ -200,13 +250,19 @@ const Mascot: React.FC<{
               {type === MascotType.GHOST && (
                   <div className="w-14 h-16 bg-white/90 rounded-t-full rounded-b-lg border-2 border-indigo-100 relative flex items-center justify-center shadow-lg">
                       {/* Eyes */}
-                      <div className="flex gap-3 -mt-2">
-                          <div className="w-3 h-3 bg-gray-800 rounded-full"></div>
-                          <div className="w-3 h-3 bg-gray-800 rounded-full"></div>
+                      <div className="flex gap-3 -mt-2 items-center">
+                          {happy ? (
+                               <div className="text-xs font-bold text-gray-800">{"> <"}</div>
+                          ) : (
+                               <>
+                                <div className="w-3 h-3 bg-gray-800 rounded-full"></div>
+                                <div className="w-3 h-3 bg-gray-800 rounded-full"></div>
+                               </>
+                          )}
                       </div>
                       {/* Blush */}
-                      <div className="absolute top-8 left-2 w-2 h-1 bg-pink-200 rounded-full opacity-50"></div>
-                      <div className="absolute top-8 right-2 w-2 h-1 bg-pink-200 rounded-full opacity-50"></div>
+                      <div className={`absolute top-8 left-2 w-2 h-1 bg-pink-200 rounded-full ${happy ? 'opacity-100 scale-125' : 'opacity-50'}`}></div>
+                      <div className={`absolute top-8 right-2 w-2 h-1 bg-pink-200 rounded-full ${happy ? 'opacity-100 scale-125' : 'opacity-50'}`}></div>
                       {/* Tail/Floaty bits at bottom */}
                       <div className="absolute -bottom-1 flex w-full justify-between px-1">
                           <div className="w-3 h-3 bg-white rounded-full"></div>
@@ -218,40 +274,68 @@ const Mascot: React.FC<{
               {type === MascotType.SLIME && (
                   <div className="w-16 h-14 bg-cyan-400 rounded-t-[50%] rounded-b-2xl border-2 border-cyan-600 relative flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.5)]">
                       <div className="absolute -top-2 w-4 h-4 bg-cyan-400 rounded-full border-t-2 border-l-2 border-cyan-600 -rotate-45"></div>
-                      <div className="flex gap-4 mt-2">
-                          <div className="w-2 h-3 bg-gray-900 rounded-full"></div>
-                          <div className="w-2 h-3 bg-gray-900 rounded-full"></div>
+                      <div className="flex gap-4 mt-2 items-center">
+                          {happy ? (
+                              <>
+                                <div className="w-2 h-1 border-t-2 border-gray-900 rounded-full mt-1"></div>
+                                <div className="w-2 h-1 border-t-2 border-gray-900 rounded-full mt-1"></div>
+                              </>
+                          ) : (
+                              <>
+                                <div className="w-2 h-3 bg-gray-900 rounded-full"></div>
+                                <div className="w-2 h-3 bg-gray-900 rounded-full"></div>
+                              </>
+                          )}
                       </div>
+                      {happy && <div className="absolute top-9 w-2 h-1 bg-gray-900/50 rounded-full"></div>}
                       <div className="absolute top-4 left-2 w-2 h-2 bg-white/50 rounded-full"></div>
                   </div>
               )}
               {type === MascotType.AXOLOTL && (
                   <div className="w-16 h-14 bg-pink-300 rounded-2xl border-2 border-pink-400 relative flex items-center justify-center">
                       {/* Gills */}
-                      <div className="absolute -left-2 top-2 w-2 h-2 bg-pink-500 rounded-full"></div>
-                      <div className="absolute -left-2 top-5 w-2 h-2 bg-pink-500 rounded-full"></div>
-                      <div className="absolute -right-2 top-2 w-2 h-2 bg-pink-500 rounded-full"></div>
-                      <div className="absolute -right-2 top-5 w-2 h-2 bg-pink-500 rounded-full"></div>
+                      <div className={`absolute -left-2 top-2 w-2 h-2 bg-pink-500 rounded-full ${happy ? 'animate-pulse' : ''}`}></div>
+                      <div className={`absolute -left-2 top-5 w-2 h-2 bg-pink-500 rounded-full ${happy ? 'animate-pulse' : ''}`}></div>
+                      <div className={`absolute -right-2 top-2 w-2 h-2 bg-pink-500 rounded-full ${happy ? 'animate-pulse' : ''}`}></div>
+                      <div className={`absolute -right-2 top-5 w-2 h-2 bg-pink-500 rounded-full ${happy ? 'animate-pulse' : ''}`}></div>
                       {/* Face */}
-                      <div className="flex gap-6">
-                          <div className="w-1 h-1 bg-gray-800 rounded-full"></div>
-                          <div className="w-1 h-1 bg-gray-800 rounded-full"></div>
+                      <div className="flex gap-6 items-center">
+                          {happy ? (
+                              <>
+                                <div className="w-1 h-1.5 border-t-2 border-gray-800 rounded-full mt-1"></div>
+                                <div className="w-1 h-1.5 border-t-2 border-gray-800 rounded-full mt-1"></div>
+                              </>
+                          ) : (
+                              <>
+                                <div className="w-1 h-1 bg-gray-800 rounded-full"></div>
+                                <div className="w-1 h-1 bg-gray-800 rounded-full"></div>
+                              </>
+                          )}
                       </div>
-                      <div className="absolute top-9 w-4 h-2 border-b-2 border-gray-700 rounded-full"></div>
+                      <div className={`absolute top-9 w-4 h-2 border-b-2 border-gray-700 rounded-full ${happy ? 'h-3' : 'h-2'}`}></div>
                   </div>
               )}
               {type === MascotType.DRAGON && (
                   <div className="w-16 h-16 bg-green-400 rounded-xl border-2 border-green-600 relative flex items-center justify-center">
                       {/* Wings */}
-                      <div className="absolute -left-4 top-4 w-6 h-4 bg-purple-400 rounded-full -rotate-12 -z-10"></div>
-                      <div className="absolute -right-4 top-4 w-6 h-4 bg-purple-400 rounded-full rotate-12 -z-10"></div>
+                      <div className={`absolute -left-4 top-4 w-6 h-4 bg-purple-400 rounded-full -rotate-12 -z-10 ${happy ? 'animate-flap' : ''}`}></div>
+                      <div className={`absolute -right-4 top-4 w-6 h-4 bg-purple-400 rounded-full rotate-12 -z-10 ${happy ? 'animate-flap' : ''}`}></div>
                       {/* Horns */}
                       <div className="absolute -top-2 left-3 w-2 h-4 bg-yellow-400 rounded-full -rotate-12"></div>
                       <div className="absolute -top-2 right-3 w-2 h-4 bg-yellow-400 rounded-full rotate-12"></div>
                       
-                      <div className="flex gap-4 mt-2">
-                          <div className="w-2 h-2 bg-gray-900 rounded-full"></div>
-                          <div className="w-2 h-2 bg-gray-900 rounded-full"></div>
+                      <div className="flex gap-4 mt-2 items-center">
+                          {happy ? (
+                              <>
+                                <div className="w-2 h-1 border-t-2 border-gray-900 rounded-full mt-1"></div>
+                                <div className="w-2 h-1 border-t-2 border-gray-900 rounded-full mt-1"></div>
+                              </>
+                          ) : (
+                              <>
+                                <div className="w-2 h-2 bg-gray-900 rounded-full"></div>
+                                <div className="w-2 h-2 bg-gray-900 rounded-full"></div>
+                              </>
+                          )}
                       </div>
                       {/* Snout */}
                       <div className="absolute bottom-3 w-8 h-4 bg-green-300 rounded-full opacity-50"></div>
@@ -376,6 +460,7 @@ export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations,
                                 type={settings.mascot} 
                                 theme={settings.theme} 
                                 isCelebrating={isCelebration} 
+                                isReacting={isShaking || isCelebration}
                                 customClass="w-12 h-12 animate-bounce" // Always bounce to simulate walking/floating
                                 scale={settings.mascotScale}
                             />
@@ -414,6 +499,7 @@ export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations,
                 type={settings.mascot} 
                 theme={settings.theme} 
                 isCelebrating={isCelebration} 
+                isReacting={isShaking || isCelebration}
                 scale={settings.mascotScale}
             />
 
