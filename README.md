@@ -12,51 +12,58 @@ Um widget de meta de doação altamente personalizável estilo anime, com roleta
 *   **Roleta de Eventos (Gacha):** Sorteia automaticamente uma atividade (ex: "Karaokê", "Sorteio") quando uma meta é atingida.
 *   **Efeitos:** Chuva de confete, partículas flutuantes e animações de "shake".
 
-## 🚀 Como Rodar o Projeto
+## 📦 Como Criar o Executável (.exe)
 
-Certifique-se de ter o [Node.js](https://nodejs.org/) instalado.
+Para transformar este projeto em um programa de computador que você pode instalar e abrir sem o navegador:
 
-1.  Abra o terminal na pasta do projeto.
-2.  Instale as dependências:
+1.  **Instale as dependências:**
+    Abra o terminal na pasta do projeto e execute:
     ```bash
     npm install
     ```
-3.  Inicie o servidor de desenvolvimento:
+
+2.  **Gere o Executável:**
+    Execute o comando abaixo. Isso vai compilar o código React e depois empacotar com o Electron.
     ```bash
-    npm start
+    npm run dist
     ```
-4.  O projeto abrirá em seu navegador (geralmente em `http://localhost:3000`).
+
+3.  **Encontre o arquivo:**
+    Após o término do processo, uma nova pasta chamada `dist-electron` será criada. Dentro dela, você encontrará o instalador (ex: `KawaiiWidget Setup 1.0.0.exe`).
+
+## 🚀 Como Rodar em Modo de Desenvolvimento
+
+1.  Inicie o servidor de desenvolvimento:
+    ```bash
+    npm run dev
+    ```
+2.  (Opcional) Em outro terminal, inicie a janela do Electron para testar como desktop:
+    ```bash
+    npm run electron
+    ```
 
 ---
 
 ## 🎥 Como Adicionar ao OBS Studio
 
-Como este é um aplicativo web que roda localmente e possui um painel de controle embutido, existem duas formas principais de colocá-lo na sua live:
+Você pode adicionar este widget de duas formas:
 
-### Opção 1: Captura de Janela (Recomendado para facilitar ajustes)
+### Opção 1: Usando o Aplicativo (.exe)
 
-Esta opção permite que você altere as metas e configurações em tempo real no seu navegador e veja o resultado no OBS instantaneamente.
+1.  Abra o aplicativo **KawaiiWidget** que você gerou.
+2.  No OBS, adicione uma fonte de **Captura de Janela**.
+3.  Selecione a janela do KawaiiWidget.
+4.  Segure `ALT` e arraste as bordas vermelhas no OBS para recortar apenas a parte do widget, escondendo o menu de configurações lateral.
 
-1.  Abra o projeto no seu navegador (Chrome, Firefox, etc).
-2.  No OBS, em **Fontes** (Sources), clique no `+` e selecione **Captura de Janela** (Window Capture).
-3.  Selecione a janela do seu navegador onde o widget está aberto.
-4.  **Importante (Recorte):**
-    *   A tela do aplicativo é dividida em duas partes (Painel à esquerda, Widget à direita).
-    *   No OBS, segure a tecla `ALT` e arraste as bordas da captura vermelha para **recortar** a imagem, escondendo o painel de configurações esquerdo e deixando apenas o Widget visível.
-5.  Posicione o widget onde quiser na sua cena.
-6.  *Dica:* Para deixar o fundo transparente, você pode aplicar um filtro de **Color Key** no OBS para remover a cor de fundo da área de preview (se configurado com uma cor sólida).
+### Opção 2: Fonte de Navegador (Sem instalar nada)
 
-### Opção 2: Fonte de Navegador (Browser Source)
+1.  Rode o projeto localmente com `npm run dev`.
+2.  No OBS, adicione uma fonte de **Navegador**.
+3.  URL: `http://localhost:5173` (ou a porta que aparecer no seu terminal).
+4.  Width: `1920`, Height: `1080`.
+5.  Use a opção "Interagir" do OBS para configurar suas metas.
 
-1.  No OBS, em **Fontes**, clique no `+` e selecione **Navegador** (Browser).
-2.  No campo **URL**, coloque: `http://localhost:3000`
-3.  Defina a largura (Width) como `1920` e altura (Height) como `1080`.
-4.  Clique em OK.
-5.  Assim como na Opção 1, segure `ALT` e arraste as bordas para recortar e mostrar apenas o widget.
-6.  **Para interagir (Configurar):**
-    *   Clique com o botão direito na fonte do Navegador no OBS.
-    *   Clique em **Interagir** (Interact).
-    *   Uma janela abrirá onde você pode clicar nos botões e alterar as configurações dentro do próprio OBS.
+---
 
 ## ⚙️ Configurando a Roleta e Metas
 
@@ -65,20 +72,12 @@ Esta opção permite que você altere as metas e configurações em tempo real n
     *   Selecione **Sub-Goals (Escadinha)** se quiser que a roleta gire várias vezes a cada X valor (ex: a cada R$50).
 3.  Vá até **Event Roulette**.
     *   Ative o checkbox.
-    *   Escreva seus eventos na caixa de texto (um por linha). Exemplo:
-        ```
-        Cantar uma música
-        Imitar um NPC
-        Sorteio de Key
-        10 Flexões
-        ```
+    *   Escreva seus eventos na caixa de texto (um por linha).
 4.  Sempre que a meta for atingida (simule clicando nos botões verdes de teste), a roleta irá girar!
-
----
 
 ## 🛠 Tecnologias
 
-*   React
-*   TypeScript
+*   React + Vite
+*   Electron
 *   Tailwind CSS
 *   Lucide React (Ícones)
