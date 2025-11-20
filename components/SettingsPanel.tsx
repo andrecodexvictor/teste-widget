@@ -1,6 +1,7 @@
+
 import React from 'react';
-import { WidgetSettings, ThemeMode, MascotType, WidgetPosition } from '../types';
-import { Sliders, Layout, Palette, PlayCircle, DollarSign } from 'lucide-react';
+import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode } from '../types';
+import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna } from 'lucide-react';
 
 interface SettingsPanelProps {
     settings: WidgetSettings;
@@ -12,6 +13,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
     
     const handleChange = (key: keyof WidgetSettings, value: any) => {
         setSettings(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleEventsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const lines = e.target.value.split('\n').filter(line => line.trim() !== '');
+        handleChange('rouletteEvents', lines);
     };
 
     return (
@@ -38,16 +44,33 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
             {/* Goal Configuration */}
             <section className="space-y-3">
                 <h3 className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
-                    <DollarSign size={14} /> Goal Settings
+                    <DollarSign size={14} /> Goal Logic
                 </h3>
+                
+                {/* Goal Mode Toggle */}
+                <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
+                    <button 
+                        onClick={() => handleChange('goalMode', GoalMode.SIMPLE)}
+                        className={`flex-1 text-xs py-1.5 rounded-md font-semibold transition ${settings.goalMode === GoalMode.SIMPLE ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
+                    >
+                        One Big Goal
+                    </button>
+                    <button 
+                        onClick={() => handleChange('goalMode', GoalMode.SUBGOALS)}
+                        className={`flex-1 text-xs py-1.5 rounded-md font-semibold transition ${settings.goalMode === GoalMode.SUBGOALS ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
+                    >
+                        Sub-Goals (Escadinha)
+                    </button>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-xs text-gray-500 mb-1">Target Amount</label>
+                        <label className="block text-xs text-gray-500 mb-1">Total Target</label>
                         <input 
                             type="number" 
                             value={settings.goalAmount}
                             onChange={(e) => handleChange('goalAmount', parseInt(e.target.value))}
-                            className="w-full p-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                            className="w-full p-2 bg-black text-white border border-gray-700 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                         />
                     </div>
                     <div>
@@ -56,19 +79,68 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                             type="number" 
                             value={settings.currentAmount}
                             onChange={(e) => handleChange('currentAmount', parseInt(e.target.value))}
-                            className="w-full p-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                            className="w-full p-2 bg-black text-white border border-gray-700 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                         />
                     </div>
                 </div>
+
+                {settings.goalMode === GoalMode.SUBGOALS && (
+                    <div className="bg-indigo-50 p-3 rounded-md border border-indigo-100">
+                        <label className="block text-xs text-indigo-700 font-bold mb-1 flex items-center gap-1">
+                            <Dna size={12} />
+                            Sub-Goal Step Amount
+                        </label>
+                        <div className="text-[10px] text-indigo-500 mb-1">Trigger event every time this amount is reached.</div>
+                        <input 
+                            type="number" 
+                            value={settings.subGoalInterval}
+                            onChange={(e) => handleChange('subGoalInterval', parseInt(e.target.value))}
+                            className="w-full p-2 bg-black text-white border border-indigo-200 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                            placeholder="e.g. 100"
+                        />
+                    </div>
+                )}
+
                 <div>
                     <label className="block text-xs text-gray-500 mb-1">Widget Title</label>
                     <input 
                         type="text" 
                         value={settings.title}
                         onChange={(e) => handleChange('title', e.target.value)}
-                        className="w-full p-2 border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full p-2 bg-black text-white border border-gray-700 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                 </div>
+            </section>
+
+            {/* Roulette / Event Settings */}
+            <section className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
+                        <Gift size={14} /> Event Roulette
+                    </h3>
+                    <div className="flex items-center">
+                        <input 
+                            type="checkbox"
+                            checked={settings.enableRoulette}
+                            onChange={(e) => handleChange('enableRoulette', e.target.checked)}
+                            className="w-4 h-4 text-indigo-600 rounded"
+                        />
+                    </div>
+                </div>
+                
+                {settings.enableRoulette && (
+                    <div className="animate-fade-in">
+                         <label className="block text-xs text-gray-500 mb-1">Events (One per line)</label>
+                         <textarea 
+                            value={settings.rouletteEvents.join('\n')}
+                            onChange={handleEventsChange}
+                            rows={5}
+                            className="w-full p-2 bg-black text-white border border-gray-700 rounded-md text-xs focus:ring-2 focus:ring-indigo-500 outline-none resize-y"
+                            placeholder="Sing a song&#10;Do 10 squats&#10;Gift sub"
+                         />
+                         <p className="text-[10px] text-gray-400 mt-1">Will trigger when a goal or sub-goal is reached.</p>
+                    </div>
+                )}
             </section>
 
             {/* Mascot & Layout */}
@@ -88,6 +160,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                          <option value={MascotType.SHIBA}>🐕 Shiba Inu</option>
                          <option value={MascotType.LUMA}>⭐ Star Spirit</option>
                          <option value={MascotType.ROBOT}>🤖 Mecha Bot</option>
+                         <option value={MascotType.BUNNY}>🐰 Bunny</option>
+                         <option value={MascotType.GHOST}>👻 Ghost</option>
+                         <option value={MascotType.SLIME}>💧 Slime</option>
+                         <option value={MascotType.AXOLOTL}>🦎 Axolotl</option>
+                         <option value={MascotType.DRAGON}>🐲 Dragon</option>
                      </select>
                 </div>
 
@@ -142,7 +219,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                         onClick={() => onSimulateDonation(100, "Whale", "Milestone!")}
                         className="col-span-2 bg-green-500 text-white text-xs font-bold py-2 px-3 rounded hover:bg-green-600 transition shadow-sm"
                     >
-                        Trigger Celebration ($100)
+                        Add $100 (Trigger Sub-Goal)
                     </button>
                 </div>
                 <p className="text-[10px] text-green-600 opacity-70 text-center">

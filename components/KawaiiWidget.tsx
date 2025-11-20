@@ -1,6 +1,8 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { WidgetSettings, ThemeMode, Donation, MascotType } from '../types';
 import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift } from 'lucide-react';
+import { RouletteWheel } from './RouletteWheel';
 
 // --- Sub-components ---
 
@@ -161,6 +163,83 @@ const Mascot: React.FC<{ type: MascotType, theme: ThemeMode, isCelebrating: bool
                       <div className="h-1 w-full bg-gray-700 mt-1"></div>
                   </div>
               )}
+              {type === MascotType.BUNNY && (
+                  <div className="w-16 h-16 bg-white rounded-full border-2 border-pink-200 relative flex items-center justify-center">
+                      {/* Ears */}
+                      <div className="absolute -top-6 left-2 w-3 h-8 bg-white border-2 border-pink-200 rounded-full -rotate-12">
+                          <div className="w-1 h-5 bg-pink-200 rounded-full mx-auto mt-1"></div>
+                      </div>
+                      <div className="absolute -top-6 right-2 w-3 h-8 bg-white border-2 border-pink-200 rounded-full rotate-12">
+                          <div className="w-1 h-5 bg-pink-200 rounded-full mx-auto mt-1"></div>
+                      </div>
+                      {/* Face */}
+                      <div className="flex gap-4 mt-1">
+                          <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                          <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
+                      </div>
+                      <div className="absolute top-10 w-2 h-1 bg-pink-300 rounded-full"></div>
+                  </div>
+              )}
+              {type === MascotType.GHOST && (
+                  <div className="w-14 h-16 bg-white/90 rounded-t-full rounded-b-lg border-2 border-indigo-100 relative flex items-center justify-center shadow-lg">
+                      {/* Eyes */}
+                      <div className="flex gap-3 -mt-2">
+                          <div className="w-3 h-3 bg-gray-800 rounded-full"></div>
+                          <div className="w-3 h-3 bg-gray-800 rounded-full"></div>
+                      </div>
+                      {/* Blush */}
+                      <div className="absolute top-8 left-2 w-2 h-1 bg-pink-200 rounded-full opacity-50"></div>
+                      <div className="absolute top-8 right-2 w-2 h-1 bg-pink-200 rounded-full opacity-50"></div>
+                      {/* Tail/Floaty bits at bottom */}
+                      <div className="absolute -bottom-1 flex w-full justify-between px-1">
+                          <div className="w-3 h-3 bg-white rounded-full"></div>
+                          <div className="w-3 h-3 bg-white rounded-full"></div>
+                          <div className="w-3 h-3 bg-white rounded-full"></div>
+                      </div>
+                  </div>
+              )}
+              {type === MascotType.SLIME && (
+                  <div className="w-16 h-14 bg-cyan-400 rounded-t-[50%] rounded-b-2xl border-2 border-cyan-600 relative flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.5)]">
+                      <div className="absolute -top-2 w-4 h-4 bg-cyan-400 rounded-full border-t-2 border-l-2 border-cyan-600 -rotate-45"></div>
+                      <div className="flex gap-4 mt-2">
+                          <div className="w-2 h-3 bg-gray-900 rounded-full"></div>
+                          <div className="w-2 h-3 bg-gray-900 rounded-full"></div>
+                      </div>
+                      <div className="absolute top-4 left-2 w-2 h-2 bg-white/50 rounded-full"></div>
+                  </div>
+              )}
+              {type === MascotType.AXOLOTL && (
+                  <div className="w-16 h-14 bg-pink-300 rounded-2xl border-2 border-pink-400 relative flex items-center justify-center">
+                      {/* Gills */}
+                      <div className="absolute -left-2 top-2 w-2 h-2 bg-pink-500 rounded-full"></div>
+                      <div className="absolute -left-2 top-5 w-2 h-2 bg-pink-500 rounded-full"></div>
+                      <div className="absolute -right-2 top-2 w-2 h-2 bg-pink-500 rounded-full"></div>
+                      <div className="absolute -right-2 top-5 w-2 h-2 bg-pink-500 rounded-full"></div>
+                      {/* Face */}
+                      <div className="flex gap-6">
+                          <div className="w-1 h-1 bg-gray-800 rounded-full"></div>
+                          <div className="w-1 h-1 bg-gray-800 rounded-full"></div>
+                      </div>
+                      <div className="absolute top-9 w-4 h-2 border-b-2 border-gray-700 rounded-full"></div>
+                  </div>
+              )}
+              {type === MascotType.DRAGON && (
+                  <div className="w-16 h-16 bg-green-400 rounded-xl border-2 border-green-600 relative flex items-center justify-center">
+                      {/* Wings */}
+                      <div className="absolute -left-4 top-4 w-6 h-4 bg-purple-400 rounded-full -rotate-12 -z-10"></div>
+                      <div className="absolute -right-4 top-4 w-6 h-4 bg-purple-400 rounded-full rotate-12 -z-10"></div>
+                      {/* Horns */}
+                      <div className="absolute -top-2 left-3 w-2 h-4 bg-yellow-400 rounded-full -rotate-12"></div>
+                      <div className="absolute -top-2 right-3 w-2 h-4 bg-yellow-400 rounded-full rotate-12"></div>
+                      
+                      <div className="flex gap-4 mt-2">
+                          <div className="w-2 h-2 bg-gray-900 rounded-full"></div>
+                          <div className="w-2 h-2 bg-gray-900 rounded-full"></div>
+                      </div>
+                      {/* Snout */}
+                      <div className="absolute bottom-3 w-8 h-4 bg-green-300 rounded-full opacity-50"></div>
+                  </div>
+              )}
            </div>
         </div>
     );
@@ -203,9 +282,11 @@ interface KawaiiWidgetProps {
   donations: Donation[];
   isShaking: boolean;
   isCelebration: boolean;
+  showRoulette: boolean;
+  onRouletteComplete: () => void;
 }
 
-export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations, isShaking, isCelebration }) => {
+export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations, isShaking, isCelebration, showRoulette, onRouletteComplete }) => {
     const percentage = (settings.currentAmount / settings.goalAmount) * 100;
     const topDonor = donations.reduce((prev, current) => (prev.amount > current.amount) ? prev : current, donations[0]);
 
@@ -244,6 +325,15 @@ export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations,
         <div 
             className={`relative w-[350px] p-6 transition-transform ${isShaking ? 'animate-shake' : 'animate-float'} ${styles.container} ${styles.font}`}
         >
+            {/* Event Roulette Overlay */}
+            {showRoulette && settings.enableRoulette && (
+                <RouletteWheel 
+                    theme={settings.theme} 
+                    events={settings.rouletteEvents} 
+                    onComplete={onRouletteComplete} 
+                />
+            )}
+
             {isCelebration && <Confetti />}
             <Particles theme={settings.theme} />
 

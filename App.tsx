@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { WidgetSettings, DEFAULT_SETTINGS, Donation, ThemeMode, WidgetPosition } from './types';
+import { WidgetSettings, DEFAULT_SETTINGS, Donation, ThemeMode, WidgetPosition, GoalMode } from './types';
 import { KawaiiWidget } from './components/KawaiiWidget';
 import { SettingsPanel } from './components/SettingsPanel';
 import { RefreshCw, Monitor, Heart } from 'lucide-react';
@@ -13,6 +14,7 @@ const App: React.FC = () => {
   ]);
   const [isShaking, setIsShaking] = useState(false);
   const [isCelebration, setIsCelebration] = useState(false);
+  const [showRoulette, setShowRoulette] = useState(false);
 
   // Simulate adding a donation
   const simulateDonation = useCallback((amount: number, username: string, message: string) => {
@@ -27,7 +29,33 @@ const App: React.FC = () => {
     setDonations(prev => [newDonation, ...prev].slice(0, 10)); // Keep last 10
     
     setSettings(prev => {
-        const newAmount = prev.currentAmount + amount;
+        const oldAmount = prev.currentAmount;
+        const newAmount = oldAmount + amount;
+        
+        // Check for Sub-goal triggers
+        let shouldTriggerRoulette = false;
+        
+        if (prev.enableRoulette) {
+            if (prev.goalMode === GoalMode.SUBGOALS && prev.subGoalInterval > 0) {
+                const oldMilestone = Math.floor(oldAmount / prev.subGoalInterval);
+                const newMilestone = Math.floor(newAmount / prev.subGoalInterval);
+                
+                if (newMilestone > oldMilestone) {
+                    shouldTriggerRoulette = true;
+                }
+            } else if (prev.goalMode === GoalMode.SIMPLE) {
+                // For simple goal, only trigger on full completion
+                if (newAmount >= prev.goalAmount && oldAmount < prev.goalAmount) {
+                     shouldTriggerRoulette = true;
+                }
+            }
+        }
+
+        // Delay setting the roulette slightly so the shake happens first
+        if (shouldTriggerRoulette) {
+            setTimeout(() => setShowRoulette(true), 800);
+        }
+
         return { ...prev, currentAmount: newAmount };
     });
 
@@ -35,12 +63,13 @@ const App: React.FC = () => {
     setIsShaking(true);
     setTimeout(() => setIsShaking(false), 500);
 
-    // Check Celebration
+    // Check Celebration (Confetti)
+    // Trigger if total goal reached
     if (settings.currentAmount + amount >= settings.goalAmount && settings.currentAmount < settings.goalAmount) {
         setIsCelebration(true);
         setTimeout(() => setIsCelebration(false), 8000);
     }
-  }, [settings.currentAmount, settings.goalAmount]);
+  }, [settings.currentAmount, settings.goalAmount, settings.goalMode, settings.subGoalInterval, settings.enableRoulette]);
 
   // Layout for the "App" (Split screen: Settings vs Preview)
   return (
@@ -89,6 +118,8 @@ const App: React.FC = () => {
                 donations={donations} 
                 isShaking={isShaking}
                 isCelebration={isCelebration}
+                showRoulette={showRoulette}
+                onRouletteComplete={() => setShowRoulette(false)}
             />
         </div>
 

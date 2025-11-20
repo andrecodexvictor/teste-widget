@@ -1,3 +1,4 @@
+
 export enum ThemeMode {
   KAWAII = 'kawaii',
   MARIO = 'mario',
@@ -18,6 +19,16 @@ export enum MascotType {
   SHIBA = 'shiba',
   LUMA = 'luma',
   ROBOT = 'robot',
+  BUNNY = 'bunny',
+  GHOST = 'ghost',
+  SLIME = 'slime',
+  AXOLOTL = 'axolotl',
+  DRAGON = 'dragon',
+}
+
+export enum GoalMode {
+  SIMPLE = 'simple',
+  SUBGOALS = 'subgoals', // "Escadinha"
 }
 
 export interface Donation {
@@ -30,8 +41,14 @@ export interface Donation {
 
 export interface WidgetSettings {
   theme: ThemeMode;
+  
+  // Goal Logic
+  goalMode: GoalMode;
   goalAmount: number;
   currentAmount: number;
+  subGoalInterval: number; // e.g., Every 100 triggers an event
+  
+  // Visuals
   currency: string;
   title: string;
   mascot: MascotType;
@@ -42,12 +59,18 @@ export interface WidgetSettings {
   opacity: number;
   scale: number; // 0.5 to 1.5
   position: WidgetPosition;
+
+  // Roulette / Events
+  enableRoulette: boolean;
+  rouletteEvents: string[]; // List of events for the wheel
 }
 
 export const DEFAULT_SETTINGS: WidgetSettings = {
   theme: ThemeMode.KAWAII,
+  goalMode: GoalMode.SUBGOALS,
   goalAmount: 500,
   currentAmount: 120,
+  subGoalInterval: 100,
   currency: 'R$',
   title: 'Monthly Goal',
   mascot: MascotType.CAT_GAMER,
@@ -58,4 +81,14 @@ export const DEFAULT_SETTINGS: WidgetSettings = {
   opacity: 0.95,
   scale: 1,
   position: WidgetPosition.CENTER_BOTTOM,
+  
+  enableRoulette: true,
+  rouletteEvents: [
+    "ASMR Stream", 
+    "Cosplay", 
+    "Horror Game", 
+    "Karaoke", 
+    "Giveaway", 
+    "Chat Picks Game"
+  ]
 };
