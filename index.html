@@ -40,6 +40,86 @@
       .neon-pulse {
         animation: pulse-glow 2s infinite alternate;
       }
+
+      /* Celebration Animations */
+      @keyframes firework {
+        0% { transform: translate(var(--x), var(--initialY)); width: var(--initialSize); opacity: 1; }
+        50% { width: 0.5vmin; opacity: 1; }
+        100% { width: var(--finalSize); opacity: 0; }
+      }
+      .firework,
+      .firework::before,
+      .firework::after {
+        --initialSize: 0.5vmin;
+        --finalSize: 45vmin;
+        --particleSize: 0.2vmin;
+        --color1: yellow;
+        --color2: khaki;
+        --color3: white;
+        --color4: lime;
+        --color5: gold;
+        --color6: mediumseagreen;
+        --y: -30vmin;
+        --x: -50%;
+        --initialY: 60vmin;
+        content: "";
+        animation: firework 2s infinite;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, var(--y));
+        width: var(--initialSize);
+        aspect-ratio: 1;
+        background: 
+          radial-gradient(circle, var(--color1) var(--particleSize), #0000 0) 50% 0%,
+          radial-gradient(circle, var(--color2) var(--particleSize), #0000 0) 100% 50%,
+          radial-gradient(circle, var(--color3) var(--particleSize), #0000 0) 50% 100%,
+          radial-gradient(circle, var(--color4) var(--particleSize), #0000 0) 0% 50%,
+          radial-gradient(circle, var(--color5) var(--particleSize), #0000 0) 80% 90%,
+          radial-gradient(circle, var(--color6) var(--particleSize), #0000 0) 95% 90%,
+          radial-gradient(circle, var(--color1) var(--particleSize), #0000 0) 90% 90%,
+          radial-gradient(circle, var(--color2) var(--particleSize), #0000 0) 85% 90%,
+          radial-gradient(circle, var(--color3) var(--particleSize), #0000 0) 80% 90%,
+          radial-gradient(circle, var(--color4) var(--particleSize), #0000 0) 75% 90%,
+          radial-gradient(circle, var(--color5) var(--particleSize), #0000 0) 70% 90%,
+          radial-gradient(circle, var(--color6) var(--particleSize), #0000 0) 65% 90%,
+          radial-gradient(circle, var(--color1) var(--particleSize), #0000 0) 60% 90%,
+          radial-gradient(circle, var(--color2) var(--particleSize), #0000 0) 55% 90%,
+          radial-gradient(circle, var(--color3) var(--particleSize), #0000 0) 50% 90%,
+          radial-gradient(circle, var(--color4) var(--particleSize), #0000 0) 45% 90%,
+          radial-gradient(circle, var(--color5) var(--particleSize), #0000 0) 40% 90%,
+          radial-gradient(circle, var(--color6) var(--particleSize), #0000 0) 35% 90%,
+          radial-gradient(circle, var(--color1) var(--particleSize), #0000 0) 30% 90%,
+          radial-gradient(circle, var(--color2) var(--particleSize), #0000 0) 25% 90%,
+          radial-gradient(circle, var(--color3) var(--particleSize), #0000 0) 20% 90%,
+          radial-gradient(circle, var(--color4) var(--particleSize), #0000 0) 15% 90%,
+          radial-gradient(circle, var(--color5) var(--particleSize), #0000 0) 10% 90%,
+          radial-gradient(circle, var(--color6) var(--particleSize), #0000 0) 5% 90%,
+          radial-gradient(circle, var(--color1) var(--particleSize), #0000 0) 0% 90%;
+        background-size: var(--initialSize) var(--initialSize);
+        background-repeat: no-repeat;
+      }
+
+      @keyframes pop-in {
+        0% { transform: scale(0); opacity: 0; }
+        70% { transform: scale(1.2); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      .animate-pop-in {
+        animation: pop-in 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      }
+
+      @keyframes glitch {
+        0% { transform: translate(0); text-shadow: none; }
+        20% { transform: translate(-2px, 2px); text-shadow: 2px 2px #ff00ff, -2px -2px #00ffff; }
+        40% { transform: translate(-2px, -2px); text-shadow: 2px -2px #ff00ff, -2px 2px #00ffff; }
+        60% { transform: translate(2px, 2px); text-shadow: -2px 2px #ff00ff, 2px -2px #00ffff; }
+        80% { transform: translate(2px, -2px); text-shadow: -2px -2px #ff00ff, 2px 2px #00ffff; }
+        100% { transform: translate(0); text-shadow: none; }
+      }
+      .animate-glitch {
+        animation: glitch 0.5s infinite;
+      }
     </style>
 <script type="importmap">
 {

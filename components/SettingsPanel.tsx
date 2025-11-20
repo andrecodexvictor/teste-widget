@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle } from '../types';
-import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2 } from 'lucide-react';
+import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle, MascotReaction } from '../types';
+import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile } from 'lucide-react';
 
 interface SettingsPanelProps {
     settings: WidgetSettings;
@@ -167,7 +167,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
             {/* Mascot & Layout */}
             <section className="space-y-3">
                 <h3 className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
-                    <Layout size={14} /> Mascot & Position
+                    <Smile size={14} /> Mascot Customization
                 </h3>
                 
                 <div className="space-y-2">
@@ -186,6 +186,22 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                          <option value={MascotType.SLIME}>💧 Slime</option>
                          <option value={MascotType.AXOLOTL}>🦎 Axolotl</option>
                          <option value={MascotType.DRAGON}>🐲 Dragon</option>
+                     </select>
+                </div>
+
+                <div className="space-y-2">
+                     <label className="block text-xs text-gray-500">Donation Reaction Style</label>
+                     <select 
+                        value={settings.reactionType}
+                        onChange={(e) => handleChange('reactionType', e.target.value)}
+                        className="w-full p-2 border rounded-md text-sm bg-white"
+                     >
+                         <option value={MascotReaction.HAPPY}>😊 Happy (Default)</option>
+                         <option value={MascotReaction.LOVE}>😍 Love / Hearts</option>
+                         <option value={MascotReaction.SHOCKED}>😲 Shocked / OMG</option>
+                         <option value={MascotReaction.COOL}>😎 Cool / Shades</option>
+                         <option value={MascotReaction.CRYING}>😭 Crying Joy</option>
+                         <option value={MascotReaction.ANGRY}>🔥 Hype / Determined</option>
                      </select>
                 </div>
 
@@ -258,7 +274,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                     </button>
                 </div>
                 <p className="text-[10px] text-green-600 opacity-70 text-center">
-                    Clicking updates the preview & triggers animations.
+                    Clicking updates the preview & triggers the selected reaction.
                 </p>
             </section>
 

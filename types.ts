@@ -31,6 +31,15 @@ export enum MascotType {
   DRAGON = 'dragon',
 }
 
+export enum MascotReaction {
+  HAPPY = 'happy',     // Standard smile
+  LOVE = 'love',       // Heart eyes
+  SHOCKED = 'shocked', // Big eyes/mouth
+  COOL = 'cool',       // Sunglasses
+  CRYING = 'crying',   // Tears of joy
+  ANGRY = 'angry',     // Determined/Hype
+}
+
 export enum GoalMode {
   SIMPLE = 'simple',
   SUBGOALS = 'subgoals', // "Escadinha"
@@ -66,6 +75,7 @@ export interface WidgetSettings {
   scale: number; // Widget scale
   mascotScale: number; // Mascot specific scale
   position: WidgetPosition;
+  reactionType: MascotReaction; // Type of face on donation
 
   // Roulette / Events
   enableRoulette: boolean;
@@ -90,6 +100,7 @@ export const DEFAULT_SETTINGS: WidgetSettings = {
   scale: 1,
   mascotScale: 1,
   position: WidgetPosition.CENTER_BOTTOM,
+  reactionType: MascotReaction.HAPPY,
   
   enableRoulette: true,
   rouletteEvents: [
