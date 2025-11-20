@@ -1,0 +1,299 @@
+import React, { useEffect, useState, useMemo } from 'react';
+import { WidgetSettings, ThemeMode, Donation, MascotType } from '../types';
+import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift } from 'lucide-react';
+
+// --- Sub-components ---
+
+const Particles: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
+    // Simplified particle system for visual flair
+    const [particles, setParticles] = useState<{id: number, left: number, top: number, delay: number, size: number}[]>([]);
+
+    useEffect(() => {
+        const count = 15;
+        const newParticles = Array.from({ length: count }).map((_, i) => ({
+            id: i,
+            left: Math.random() * 100,
+            top: Math.random() * 100,
+            delay: Math.random() * 5,
+            size: Math.random() * 10 + 5,
+        }));
+        setParticles(newParticles);
+    }, []);
+
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-xl">
+            {particles.map((p) => (
+                <div
+                    key={p.id}
+                    className={`absolute opacity-60 ${theme === ThemeMode.NEON ? 'animate-pulse' : 'animate-float'}`}
+                    style={{
+                        left: `${p.left}%`,
+                        top: `${p.top}%`,
+                        animationDelay: `${p.delay}s`,
+                        width: `${p.size}px`,
+                        height: `${p.size}px`,
+                    }}
+                >
+                    {theme === ThemeMode.KAWAII && <span className="text-pink-200">🌸</span>}
+                    {theme === ThemeMode.MARIO && <span className="text-yellow-400">⭐</span>}
+                    {theme === ThemeMode.NEON && <div className="w-1 h-1 bg-cyan-400 shadow-[0_0_5px_#0ff] rounded-full" />}
+                </div>
+            ))}
+        </div>
+    );
+};
+
+const Confetti: React.FC = () => {
+    const [particles, setParticles] = useState<{id: number, x: number, color: string}[]>([]);
+    
+    useEffect(() => {
+        const colors = ['#FFC0CB', '#FFD700', '#00BFFF', '#EE82EE'];
+        const newParticles = Array.from({ length: 50 }).map((_, i) => ({
+            id: i,
+            x: Math.random() * 100,
+            color: colors[Math.floor(Math.random() * colors.length)]
+        }));
+        setParticles(newParticles);
+    }, []);
+
+    return (
+         <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
+            {particles.map((p) => (
+                <div 
+                    key={p.id}
+                    className="absolute w-2 h-2 rounded-full animate-bounce"
+                    style={{
+                        left: `${p.x}%`,
+                        backgroundColor: p.color,
+                        top: '-10px',
+                        animationDuration: `${Math.random() * 2 + 1}s`
+                    }}
+                />
+            ))}
+         </div>
+    )
+}
+
+const ProgressBar: React.FC<{ percent: number, theme: ThemeMode, primaryColor: string }> = ({ percent, theme, primaryColor }) => {
+    const clampedPercent = Math.min(100, Math.max(0, percent));
+    
+    let barClass = "";
+    let containerClass = "";
+
+    if (theme === ThemeMode.KAWAII) {
+        containerClass = "bg-white/50 border-2 border-pink-200 h-8 rounded-full shadow-inner";
+        barClass = "h-full rounded-full bg-gradient-to-r from-pink-300 to-pink-500 relative overflow-hidden";
+    } else if (theme === ThemeMode.MARIO) {
+        containerClass = "bg-black/80 border-4 border-white h-8 rounded-md shadow-[4px_4px_0px_rgba(0,0,0,0.2)]";
+        barClass = "h-full bg-gradient-to-r from-green-400 to-green-600 border-r-4 border-white/50";
+    } else {
+        // Neon
+        containerClass = "bg-gray-900 border border-cyan-500/50 h-6 skew-x-[-10deg]";
+        barClass = "h-full bg-cyan-500 shadow-[0_0_15px_#0ff]";
+    }
+
+    return (
+        <div className={`w-full mt-2 relative ${containerClass}`}>
+             <div 
+                className={`transition-all duration-1000 ease-out ${barClass}`}
+                style={{ width: `${clampedPercent}%` }}
+            >
+                {/* Shine effect */}
+                <div className="absolute top-0 left-0 w-full h-1/2 bg-white/30"></div>
+            </div>
+            {/* Percentage Text Overlay */}
+            <div className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${theme === ThemeMode.NEON ? 'text-cyan-100 skew-x-[10deg]' : 'text-gray-700 drop-shadow-md'}`}>
+                {percent.toFixed(1)}%
+            </div>
+        </div>
+    );
+};
+
+const Mascot: React.FC<{ type: MascotType, theme: ThemeMode, isCelebrating: boolean }> = ({ type, theme, isCelebrating }) => {
+    const bounce = isCelebrating ? 'animate-bounce' : 'animate-float';
+    
+    return (
+        <div className={`absolute -top-16 -left-6 w-24 h-24 z-20 transition-transform ${bounce}`}>
+           {/* Abstract Representation of Mascots using Lucide & DIVs because we don't have external assets */}
+           <div className="relative w-full h-full flex items-center justify-center drop-shadow-xl">
+              {type === MascotType.CAT_GAMER && (
+                  <div className="relative">
+                      <div className={`w-16 h-14 ${theme === ThemeMode.NEON ? 'bg-purple-600 border-2 border-cyan-400' : 'bg-white border-2 border-pink-300'} rounded-2xl flex items-center justify-center`}>
+                         <div className="flex gap-2 mt-1">
+                            <div className="w-2 h-2 bg-gray-800 rounded-full animate-pulse"></div>
+                            <div className="w-2 h-2 bg-gray-800 rounded-full animate-pulse"></div>
+                         </div>
+                         <div className="absolute -top-3 left-0 w-4 h-4 bg-inherit border-inherit rounded-tl-lg"></div>
+                         <div className="absolute -top-3 right-0 w-4 h-4 bg-inherit border-inherit rounded-tr-lg"></div>
+                         {/* Headphones */}
+                         <div className="absolute -left-2 top-2 w-3 h-10 bg-indigo-400 rounded-full"></div>
+                         <div className="absolute -right-2 top-2 w-3 h-10 bg-indigo-400 rounded-full"></div>
+                         <div className="absolute -top-4 left-2 right-2 h-6 border-t-4 border-indigo-400 rounded-t-full"></div>
+                      </div>
+                  </div>
+              )}
+              {type === MascotType.SHIBA && (
+                   <div className="w-16 h-16 bg-orange-300 rounded-full border-2 border-white flex items-center justify-center relative overflow-hidden">
+                       <div className="w-10 h-8 bg-white rounded-full absolute bottom-0"></div>
+                       <div className="flex gap-3 z-10 mb-1">
+                           <div className="w-2 h-2 bg-black rounded-full"></div>
+                           <div className="w-2 h-2 bg-black rounded-full"></div>
+                       </div>
+                       <div className="absolute -top-0 left-1 w-4 h-4 bg-orange-300 rotate-45"></div>
+                       <div className="absolute -top-0 right-1 w-4 h-4 bg-orange-300 rotate-45"></div>
+                   </div>
+              )}
+              {type === MascotType.LUMA && (
+                  <div className="text-yellow-400 filter drop-shadow-[0_0_10px_rgba(255,255,0,0.6)]">
+                      <Star size={64} fill="currentColor" strokeWidth={1} className="animate-spin-slow" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-1 h-3 bg-black rounded-full mr-2"></div>
+                          <div className="w-1 h-3 bg-black rounded-full"></div>
+                      </div>
+                  </div>
+              )}
+              {type === MascotType.ROBOT && (
+                  <div className="bg-gray-800 border-2 border-cyan-500 p-2 rounded-lg">
+                      <div className="w-12 h-8 bg-cyan-900 flex items-center justify-center gap-1">
+                          <div className="w-3 h-3 bg-cyan-400 animate-pulse"></div>
+                          <div className="w-3 h-3 bg-cyan-400 animate-pulse delay-75"></div>
+                      </div>
+                      <div className="h-1 w-full bg-gray-700 mt-1"></div>
+                  </div>
+              )}
+           </div>
+        </div>
+    );
+};
+
+const RecentDonationsTicker: React.FC<{ donations: Donation[], theme: ThemeMode }> = ({ donations, theme }) => {
+    if (donations.length === 0) return null;
+
+    let textClass = "text-gray-600";
+    if (theme === ThemeMode.MARIO) textClass = "text-white font-press-start text-[10px]";
+    if (theme === ThemeMode.NEON) textClass = "text-cyan-300 font-mono text-xs";
+    if (theme === ThemeMode.KAWAII) textClass = "text-pink-600 font-fredoka text-sm";
+
+    return (
+        <div className="w-full overflow-hidden h-6 mt-2 relative">
+            <div className="whitespace-nowrap animate-marquee flex gap-8 absolute items-center h-full">
+                {donations.map((d) => (
+                    <span key={d.id} className={`flex items-center gap-1 ${textClass}`}>
+                        <Heart size={10} fill="currentColor" className="opacity-70" />
+                        <span className="font-bold">{d.username}:</span>
+                        <span>{d.amount}</span>
+                    </span>
+                ))}
+                 {donations.map((d) => (
+                    <span key={`${d.id}-dup`} className={`flex items-center gap-1 ${textClass}`}>
+                        <Heart size={10} fill="currentColor" className="opacity-70" />
+                        <span className="font-bold">{d.username}:</span>
+                        <span>{d.amount}</span>
+                    </span>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// --- Main Component ---
+
+interface KawaiiWidgetProps {
+  settings: WidgetSettings;
+  donations: Donation[];
+  isShaking: boolean;
+  isCelebration: boolean;
+}
+
+export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations, isShaking, isCelebration }) => {
+    const percentage = (settings.currentAmount / settings.goalAmount) * 100;
+    const topDonor = donations.reduce((prev, current) => (prev.amount > current.amount) ? prev : current, donations[0]);
+
+    // Dynamic Styles based on Theme
+    const styles = useMemo(() => {
+        switch(settings.theme) {
+            case ThemeMode.MARIO:
+                return {
+                    container: 'bg-blue-500 border-4 border-yellow-400 shadow-[8px_8px_0px_#000]',
+                    font: 'font-press-start',
+                    textPrimary: 'text-white drop-shadow-[2px_2px_0_#000]',
+                    textSecondary: 'text-yellow-200',
+                    icon: <Coins className="text-yellow-300 animate-pulse" size={20} />
+                };
+            case ThemeMode.NEON:
+                return {
+                    container: 'bg-black/90 border-2 border-fuchsia-500 shadow-[0_0_30px_rgba(255,0,255,0.3)] rounded-sm neon-pulse',
+                    font: 'font-vt323',
+                    textPrimary: 'text-fuchsia-400 text-shadow-neon',
+                    textSecondary: 'text-cyan-400',
+                    icon: <Zap className="text-cyan-400" size={20} />
+                };
+            case ThemeMode.KAWAII:
+            default:
+                return {
+                    container: 'bg-white/95 border-4 border-pink-200 rounded-3xl shadow-xl',
+                    font: 'font-mochiy',
+                    textPrimary: 'text-pink-500',
+                    textSecondary: 'text-indigo-400',
+                    icon: <Sparkles className="text-yellow-400" size={20} />
+                };
+        }
+    }, [settings.theme]);
+
+    return (
+        <div 
+            className={`relative w-[350px] p-6 transition-transform ${isShaking ? 'animate-shake' : 'animate-float'} ${styles.container} ${styles.font}`}
+        >
+            {isCelebration && <Confetti />}
+            <Particles theme={settings.theme} />
+
+            {/* Mascot */}
+            <Mascot type={settings.mascot} theme={settings.theme} isCelebrating={isCelebration} />
+
+            {/* Header */}
+            <div className="flex justify-between items-end relative z-10 pl-12">
+                <div className="flex flex-col">
+                    <h2 className={`text-lg uppercase tracking-wider font-bold ${styles.textSecondary}`}>{settings.title}</h2>
+                    <div className={`text-3xl font-black flex items-center gap-2 ${styles.textPrimary}`}>
+                        {styles.icon}
+                        <span>{settings.currency}{settings.currentAmount}</span>
+                        <span className="text-sm opacity-70 self-end mb-1">/ {settings.goalAmount}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bar */}
+            <div className="relative z-10 mt-1">
+                <ProgressBar percent={percentage} theme={settings.theme} primaryColor={settings.primaryColor} />
+            </div>
+
+            {/* Footer / Top Donor */}
+            <div className="mt-4 pt-2 border-t border-black/5 relative z-10">
+                 {settings.showTopDonor && topDonor && (
+                     <div className={`flex items-center gap-2 text-xs ${styles.textSecondary} mb-1`}>
+                         <Crown size={14} className="text-yellow-500" />
+                         <span className="opacity-75">MVP:</span>
+                         <span className="font-bold">{topDonor.username}</span>
+                         <span className="opacity-75">({settings.currency}{topDonor.amount})</span>
+                     </div>
+                 )}
+                 
+                 {settings.showRecentDonations && (
+                     <RecentDonationsTicker donations={donations} theme={settings.theme} />
+                 )}
+            </div>
+            
+            {/* Decoration Elements for Mario Theme */}
+            {settings.theme === ThemeMode.MARIO && (
+                <>
+                    <div className="absolute -top-3 right-4 w-8 h-8 bg-orange-600 border-2 border-black grid grid-cols-2 gap-1 p-1 shadow-[2px_2px_0_#000]">
+                        <div className="bg-yellow-900 rounded-full w-1 h-1 place-self-center"></div>
+                        <div className="bg-yellow-900 rounded-full w-1 h-1 place-self-center"></div>
+                        <div className="bg-yellow-900 rounded-full w-1 h-1 place-self-center"></div>
+                        <div className="bg-yellow-900 rounded-full w-1 h-1 place-self-center"></div>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
