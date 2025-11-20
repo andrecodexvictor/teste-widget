@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode } from '../types';
-import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna } from 'lucide-react';
+import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle } from '../types';
+import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2 } from 'lucide-react';
 
 interface SettingsPanelProps {
     settings: WidgetSettings;
@@ -23,6 +23,27 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
     return (
         <div className="p-6 space-y-8">
             
+            {/* Style Mode Section (New) */}
+            <section className="space-y-3">
+                <h3 className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
+                    <Layout size={14} /> Widget Layout
+                </h3>
+                <div className="flex bg-gray-100 p-1 rounded-lg">
+                    <button 
+                        onClick={() => handleChange('style', WidgetStyle.STANDARD)}
+                        className={`flex-1 text-xs py-2 px-2 rounded-md font-semibold transition flex items-center justify-center gap-2 ${settings.style === WidgetStyle.STANDARD ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
+                    >
+                        <Maximize2 size={14} /> Standard (Card)
+                    </button>
+                    <button 
+                        onClick={() => handleChange('style', WidgetStyle.COMPACT)}
+                        className={`flex-1 text-xs py-2 px-2 rounded-md font-semibold transition flex items-center justify-center gap-2 ${settings.style === WidgetStyle.COMPACT ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
+                    >
+                        <Minimize2 size={14} /> Compact (Walking)
+                    </button>
+                </div>
+            </section>
+
             {/* Theme Section */}
             <section className="space-y-3">
                 <h3 className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
@@ -146,7 +167,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
             {/* Mascot & Layout */}
             <section className="space-y-3">
                 <h3 className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
-                    <Layout size={14} /> Mascot & Layout
+                    <Layout size={14} /> Mascot & Position
                 </h3>
                 
                 <div className="space-y-2">
@@ -183,17 +204,31 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                      </select>
                 </div>
 
-                <div className="flex items-center justify-between pt-2">
-                    <label className="text-sm text-gray-700">Scale ({settings.scale}x)</label>
-                    <input 
-                        type="range" 
-                        min="0.5" 
-                        max="1.5" 
-                        step="0.1"
-                        value={settings.scale}
-                        onChange={(e) => handleChange('scale', parseFloat(e.target.value))}
-                        className="w-24"
-                    />
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="">
+                        <label className="block text-xs text-gray-700 mb-1">Widget Scale ({settings.scale}x)</label>
+                        <input 
+                            type="range" 
+                            min="0.5" 
+                            max="1.5" 
+                            step="0.1"
+                            value={settings.scale}
+                            onChange={(e) => handleChange('scale', parseFloat(e.target.value))}
+                            className="w-full"
+                        />
+                    </div>
+                     <div className="">
+                        <label className="block text-xs text-gray-700 mb-1">Mascot Size ({settings.mascotScale}x)</label>
+                        <input 
+                            type="range" 
+                            min="0.5" 
+                            max="2.0" 
+                            step="0.1"
+                            value={settings.mascotScale}
+                            onChange={(e) => handleChange('mascotScale', parseFloat(e.target.value))}
+                            className="w-full"
+                        />
+                    </div>
                 </div>
             </section>
 

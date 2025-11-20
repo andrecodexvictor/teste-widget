@@ -14,6 +14,11 @@ export enum WidgetPosition {
   CENTER_BOTTOM = 'center-bottom',
 }
 
+export enum WidgetStyle {
+  STANDARD = 'standard', // Card box, fixed mascot
+  COMPACT = 'compact',   // Transparent, mascot walks on bar
+}
+
 export enum MascotType {
   CAT_GAMER = 'cat-gamer',
   SHIBA = 'shiba',
@@ -41,6 +46,7 @@ export interface Donation {
 
 export interface WidgetSettings {
   theme: ThemeMode;
+  style: WidgetStyle;
   
   // Goal Logic
   goalMode: GoalMode;
@@ -57,7 +63,8 @@ export interface WidgetSettings {
   showRecentDonations: boolean;
   showTopDonor: boolean;
   opacity: number;
-  scale: number; // 0.5 to 1.5
+  scale: number; // Widget scale
+  mascotScale: number; // Mascot specific scale
   position: WidgetPosition;
 
   // Roulette / Events
@@ -67,6 +74,7 @@ export interface WidgetSettings {
 
 export const DEFAULT_SETTINGS: WidgetSettings = {
   theme: ThemeMode.KAWAII,
+  style: WidgetStyle.STANDARD,
   goalMode: GoalMode.SUBGOALS,
   goalAmount: 500,
   currentAmount: 120,
@@ -80,6 +88,7 @@ export const DEFAULT_SETTINGS: WidgetSettings = {
   showTopDonor: true,
   opacity: 0.95,
   scale: 1,
+  mascotScale: 1,
   position: WidgetPosition.CENTER_BOTTOM,
   
   enableRoulette: true,

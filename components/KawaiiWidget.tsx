@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { WidgetSettings, ThemeMode, Donation, MascotType } from '../types';
+import { WidgetSettings, ThemeMode, Donation, MascotType, WidgetStyle } from '../types';
 import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift } from 'lucide-react';
 import { RouletteWheel } from './RouletteWheel';
 
@@ -76,7 +76,7 @@ const Confetti: React.FC = () => {
     )
 }
 
-const ProgressBar: React.FC<{ percent: number, theme: ThemeMode, primaryColor: string }> = ({ percent, theme, primaryColor }) => {
+const ProgressBar: React.FC<{ percent: number, theme: ThemeMode, primaryColor: string, compact?: boolean }> = ({ percent, theme, primaryColor, compact }) => {
     const clampedPercent = Math.min(100, Math.max(0, percent));
     
     let barClass = "";
@@ -84,18 +84,21 @@ const ProgressBar: React.FC<{ percent: number, theme: ThemeMode, primaryColor: s
 
     if (theme === ThemeMode.KAWAII) {
         containerClass = "bg-white/50 border-2 border-pink-200 h-8 rounded-full shadow-inner";
+        if (compact) containerClass = "bg-pink-100/80 border-2 border-pink-400 h-6 rounded-full shadow-md";
         barClass = "h-full rounded-full bg-gradient-to-r from-pink-300 to-pink-500 relative overflow-hidden";
     } else if (theme === ThemeMode.MARIO) {
         containerClass = "bg-black/80 border-4 border-white h-8 rounded-md shadow-[4px_4px_0px_rgba(0,0,0,0.2)]";
+        if (compact) containerClass = "bg-black/80 border-2 border-white h-6 rounded-sm shadow-md";
         barClass = "h-full bg-gradient-to-r from-green-400 to-green-600 border-r-4 border-white/50";
     } else {
         // Neon
         containerClass = "bg-gray-900 border border-cyan-500/50 h-6 skew-x-[-10deg]";
+        if (compact) containerClass = "bg-gray-900/90 border border-fuchsia-500 h-5 skew-x-[-10deg] shadow-[0_0_10px_#f0f]";
         barClass = "h-full bg-cyan-500 shadow-[0_0_15px_#0ff]";
     }
 
     return (
-        <div className={`w-full mt-2 relative ${containerClass}`}>
+        <div className={`w-full relative ${containerClass} ${compact ? 'mt-0' : 'mt-2'}`}>
              <div 
                 className={`transition-all duration-1000 ease-out ${barClass}`}
                 style={{ width: `${clampedPercent}%` }}
@@ -103,21 +106,35 @@ const ProgressBar: React.FC<{ percent: number, theme: ThemeMode, primaryColor: s
                 {/* Shine effect */}
                 <div className="absolute top-0 left-0 w-full h-1/2 bg-white/30"></div>
             </div>
-            {/* Percentage Text Overlay */}
-            <div className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${theme === ThemeMode.NEON ? 'text-cyan-100 skew-x-[10deg]' : 'text-gray-700 drop-shadow-md'}`}>
-                {percent.toFixed(1)}%
-            </div>
+            {/* Percentage Text Overlay - Only for Standard Mode */}
+            {!compact && (
+                <div className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${theme === ThemeMode.NEON ? 'text-cyan-100 skew-x-[10deg]' : 'text-gray-700 drop-shadow-md'}`}>
+                    {percent.toFixed(1)}%
+                </div>
+            )}
         </div>
     );
 };
 
-const Mascot: React.FC<{ type: MascotType, theme: ThemeMode, isCelebrating: boolean }> = ({ type, theme, isCelebrating }) => {
+const Mascot: React.FC<{ 
+    type: MascotType, 
+    theme: ThemeMode, 
+    isCelebrating: boolean, 
+    scale: number,
+    customClass?: string 
+}> = ({ type, theme, isCelebrating, scale, customClass }) => {
     const bounce = isCelebrating ? 'animate-bounce' : 'animate-float';
     
+    // Default positioning for Standard Mode if customClass isn't provided
+    const positionClass = customClass || "absolute -top-16 -left-6 w-24 h-24";
+    
     return (
-        <div className={`absolute -top-16 -left-6 w-24 h-24 z-20 transition-transform ${bounce}`}>
+        <div className={`${positionClass} z-20 transition-transform ${bounce}`}>
            {/* Abstract Representation of Mascots using Lucide & DIVs because we don't have external assets */}
-           <div className="relative w-full h-full flex items-center justify-center drop-shadow-xl">
+           <div 
+                className="relative w-full h-full flex items-center justify-center drop-shadow-xl transition-transform duration-300"
+                style={{ transform: `scale(${scale})`, transformOrigin: 'bottom center' }}
+            >
               {type === MascotType.CAT_GAMER && (
                   <div className="relative">
                       <div className={`w-16 h-14 ${theme === ThemeMode.NEON ? 'bg-purple-600 border-2 border-cyan-400' : 'bg-white border-2 border-pink-300'} rounded-2xl flex items-center justify-center`}>
@@ -287,7 +304,7 @@ interface KawaiiWidgetProps {
 }
 
 export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations, isShaking, isCelebration, showRoulette, onRouletteComplete }) => {
-    const percentage = (settings.currentAmount / settings.goalAmount) * 100;
+    const percentage = Math.min(100, (settings.currentAmount / settings.goalAmount) * 100);
     const topDonor = donations.reduce((prev, current) => (prev.amount > current.amount) ? prev : current, donations[0]);
 
     // Dynamic Styles based on Theme
@@ -299,6 +316,7 @@ export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations,
                     font: 'font-press-start',
                     textPrimary: 'text-white drop-shadow-[2px_2px_0_#000]',
                     textSecondary: 'text-yellow-200',
+                    textCompactOutline: 'text-white drop-shadow-[2px_2px_0_#000]',
                     icon: <Coins className="text-yellow-300 animate-pulse" size={20} />
                 };
             case ThemeMode.NEON:
@@ -307,6 +325,7 @@ export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations,
                     font: 'font-vt323',
                     textPrimary: 'text-fuchsia-400 text-shadow-neon',
                     textSecondary: 'text-cyan-400',
+                    textCompactOutline: 'text-cyan-100 text-shadow-[0_0_5px_#0ff]',
                     icon: <Zap className="text-cyan-400" size={20} />
                 };
             case ThemeMode.KAWAII:
@@ -316,11 +335,64 @@ export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations,
                     font: 'font-mochiy',
                     textPrimary: 'text-pink-500',
                     textSecondary: 'text-indigo-400',
+                    textCompactOutline: 'text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] stroke-black',
                     icon: <Sparkles className="text-yellow-400" size={20} />
                 };
         }
     }, [settings.theme]);
 
+    // --- RENDER: COMPACT MODE ---
+    if (settings.style === WidgetStyle.COMPACT) {
+        return (
+            <div className={`relative w-[400px] p-2 transition-transform ${isShaking ? 'animate-shake' : ''} ${styles.font}`}>
+                {/* Event Roulette Overlay - Using fixed size to match Standard mode look, centered on the bar */}
+                {showRoulette && settings.enableRoulette && (
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[350px] h-[350px]">
+                         <RouletteWheel theme={settings.theme} events={settings.rouletteEvents} onComplete={onRouletteComplete} />
+                    </div>
+                )}
+
+                {isCelebration && <Confetti />}
+
+                <div className="flex flex-col gap-1">
+                    {/* Header Info (Text needs outline/shadow because bg is transparent) */}
+                    <div className="flex justify-between items-end px-1">
+                        <h2 className={`text-sm uppercase font-bold ${styles.textCompactOutline} drop-shadow-md`}>{settings.title}</h2>
+                        <div className={`text-xl font-black ${styles.textCompactOutline} drop-shadow-md`}>
+                            {settings.currency}{settings.currentAmount}
+                            <span className="text-xs opacity-90 ml-1">/ {settings.goalAmount}</span>
+                        </div>
+                    </div>
+
+                    {/* Walking Mascot Container */}
+                    <div className="relative w-full mt-8 mb-2">
+                         {/* The Mascot moves with left: percentage% */}
+                         <div 
+                            className="absolute bottom-full mb-1 transition-all duration-1000 ease-linear z-20"
+                            style={{ left: `${percentage}%`, transform: 'translateX(-50%)' }}
+                         >
+                             {/* Using a smaller custom class for the mascot in compact mode, but scaling applies */}
+                             <Mascot 
+                                type={settings.mascot} 
+                                theme={settings.theme} 
+                                isCelebrating={isCelebration} 
+                                customClass="w-12 h-12 animate-bounce" // Always bounce to simulate walking/floating
+                                scale={settings.mascotScale}
+                            />
+                             {/* Speech bubble for percentage */}
+                             <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow border border-gray-200 whitespace-nowrap">
+                                 {percentage.toFixed(0)}%
+                             </div>
+                         </div>
+
+                         <ProgressBar percent={percentage} theme={settings.theme} primaryColor={settings.primaryColor} compact={true} />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // --- RENDER: STANDARD MODE (Original Card) ---
     return (
         <div 
             className={`relative w-[350px] p-6 transition-transform ${isShaking ? 'animate-shake' : 'animate-float'} ${styles.container} ${styles.font}`}
@@ -337,8 +409,13 @@ export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations,
             {isCelebration && <Confetti />}
             <Particles theme={settings.theme} />
 
-            {/* Mascot */}
-            <Mascot type={settings.mascot} theme={settings.theme} isCelebrating={isCelebration} />
+            {/* Mascot (Fixed position) */}
+            <Mascot 
+                type={settings.mascot} 
+                theme={settings.theme} 
+                isCelebrating={isCelebration} 
+                scale={settings.mascotScale}
+            />
 
             {/* Header */}
             <div className="flex justify-between items-end relative z-10 pl-12">
