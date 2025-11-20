@@ -1,10 +1,13 @@
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './', // Important for Electron to find files relative to the HTML
+  // Para Vercel (Web), usamos a raiz '/'. 
+  // Se for buildar para Electron futuramente, altere para './'
+  base: '/', 
   build: {
     outDir: 'dist',
     emptyOutDir: true,
