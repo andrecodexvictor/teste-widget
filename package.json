@@ -40,7 +40,7 @@
       "output": "dist-electron"
     },
     "files": [
-      "dist/**/*",
+      "build/**/*",
       "electron-main.js",
       "package.json"
     ],
