@@ -81,6 +81,10 @@ export interface WidgetSettings {
   // Roulette / Events
   enableRoulette: boolean;
   rouletteEvents: string[]; // List of events for the wheel
+
+  // Integrations
+  streamElementsToken: string;
+  livePixKey: string;
 }
 
 export const DEFAULT_SETTINGS: WidgetSettings = {
@@ -111,7 +115,10 @@ export const DEFAULT_SETTINGS: WidgetSettings = {
     "Karaoke", 
     "Giveaway", 
     "Chat Picks Game"
-  ]
+  ],
+
+  streamElementsToken: '',
+  livePixKey: ''
 };
 
 // --- StreamElements Interfaces ---

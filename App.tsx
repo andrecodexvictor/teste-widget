@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { WidgetSettings, DEFAULT_SETTINGS, Donation, ThemeMode, WidgetPosition, GoalMode, StreamElementsEvent } from './types';
 import { KawaiiWidget } from './components/KawaiiWidget';
@@ -12,7 +13,11 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<WidgetSettings>(() => {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+        if (saved) {
+            // Merge with defaults to ensure new fields (like API tokens) exist even if old save data is loaded
+            return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+        }
+        return DEFAULT_SETTINGS;
     } catch (error) {
         console.error("Error loading settings:", error);
         return DEFAULT_SETTINGS;
@@ -117,36 +122,56 @@ const App: React.FC = () => {
     }
   }, [settings.currentAmount, settings.goalAmount, settings.goalMode, settings.subGoalInterval, settings.enableRoulette]);
 
-  // StreamElements Event Listener
+  // --- StreamElements Socket Connection Logic ---
   useEffect(() => {
-    const onEventReceived = (obj: CustomEvent | any) => {
-        if (!obj.detail) return;
-        const { listener, event } = obj.detail;
+    const token = settings.streamElementsToken;
+    if (!token) return;
 
-        console.log('StreamElements Event:', listener, event);
+    // Access the global 'io' object injected by the script tag in index.html
+    const io = (window as any).io;
+    if (!io) {
+        console.error("Socket.io script not loaded");
+        return;
+    }
 
-        if (listener === 'tip-latest') {
-            simulateDonation(event.amount, event.name, event.message);
+    const socket = io('https://realtime.streamelements.com', {
+        transports: ['websocket']
+    });
+
+    socket.on('connect', () => {
+        console.log('Connected to StreamElements WebSocket');
+        socket.emit('authenticate', { method: 'jwt', token: token });
+    });
+
+    socket.on('authenticated', () => {
+        console.log('Successfully authenticated with StreamElements');
+    });
+
+    socket.on('event', (data: any) => {
+        console.log('New StreamElements Event:', data);
+        if (data.type === 'tip') {
+            // Standard donation
+             simulateDonation(data.data.amount, data.data.username, data.data.message || '');
+        } else if (data.type === 'subscriber') {
+            // Optional: Handle subs as amount if needed, e.g. 500 points per sub
+            // simulateDonation(5, data.data.username, "Subscribed!");
         }
-        
-        // You can add more listeners here (e.g. 'subscriber-latest' if you want to convert subs to points)
-    };
+    });
 
-    // StreamElements initial load (for session data if needed)
-    const onWidgetLoad = (obj: CustomEvent | any) => {
-        console.log('Widget Loaded', obj.detail);
-        // Here you could sync initial goal state if you were pulling from SE session data
-    };
+    socket.on('disconnect', () => {
+        console.log('Disconnected from StreamElements');
+    });
 
-    window.addEventListener('onEventReceived', onEventReceived);
-    window.addEventListener('onWidgetLoad', onWidgetLoad);
-
+    // Cleanup on unmount or token change
     return () => {
-        window.removeEventListener('onEventReceived', onEventReceived);
-        window.removeEventListener('onWidgetLoad', onWidgetLoad);
+        socket.disconnect();
     };
-  }, [simulateDonation]);
 
+  }, [settings.streamElementsToken, simulateDonation]);
+
+  // --- LivePix Logic Placeholder ---
+  // Note: LivePix usually provides a Widget URL or specific socket documentation.
+  // If using a standard WebSocket, logic would go here similar to above.
 
   // Helper to determine absolute positioning classes based on settings
   const getPositionClasses = (pos: WidgetPosition) => {

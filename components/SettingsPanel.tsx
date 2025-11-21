@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle, MascotReaction } from '../types';
-import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile } from 'lucide-react';
+import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap } from 'lucide-react';
 
 interface SettingsPanelProps {
     settings: WidgetSettings;
@@ -11,6 +11,8 @@ interface SettingsPanelProps {
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSettings, onSimulateDonation }) => {
     
+    const [showSecrets, setShowSecrets] = useState(false);
+
     const handleChange = (key: keyof WidgetSettings, value: any) => {
         setSettings(prev => ({ ...prev, [key]: value }));
     };
@@ -41,6 +43,56 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                     >
                         <Minimize2 size={14} /> Compact (Walking)
                     </button>
+                </div>
+            </section>
+
+            {/* Integrations Section */}
+            <section className="space-y-3 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-bold uppercase text-indigo-600 flex items-center gap-2">
+                        <Globe size={14} /> Real-time Integrations
+                    </h3>
+                    <button 
+                        onClick={() => setShowSecrets(!showSecrets)} 
+                        className="text-indigo-400 hover:text-indigo-600"
+                        title={showSecrets ? "Hide Keys" : "Show Keys"}
+                    >
+                        {showSecrets ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                </div>
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+                            <Zap size={12} className="text-yellow-500" /> StreamElements JWT Token
+                        </label>
+                        <input 
+                            type={showSecrets ? "text" : "password"}
+                            value={settings.streamElementsToken || ''}
+                            onChange={(e) => handleChange('streamElementsToken', e.target.value)}
+                            placeholder="Paste JWT Token here..."
+                            className="w-full p-2 bg-white border border-indigo-200 rounded-md text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                        <a href="https://streamelements.com/dashboard/account/channels" target="_blank" rel="noreferrer" className="text-[10px] text-indigo-400 hover:underline mt-1 inline-block">
+                            Find in Dashboard &gt; Account &gt; Channels
+                        </a>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+                            <Zap size={12} className="text-green-500" /> LivePix Key / Widget URL
+                        </label>
+                        <input 
+                            type={showSecrets ? "text" : "password"}
+                            value={settings.livePixKey || ''}
+                            onChange={(e) => handleChange('livePixKey', e.target.value)}
+                            placeholder="Paste LivePix Widget URL or Key..."
+                            className="w-full p-2 bg-white border border-indigo-200 rounded-md text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1">
+                            Used to listen for real-time Pix donations.
+                        </p>
+                    </div>
                 </div>
             </section>
 
