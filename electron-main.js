@@ -23,10 +23,10 @@ function createWindow() {
     // For simplicity in this setup without concurrent, we assume production build mostly,
     // but let's try to load local vite server if available or fallback to file.
     win.loadURL('http://localhost:5173').catch(() => {
-        win.loadFile(path.join(__dirname, 'build/index.html'));
+        win.loadFile(path.join(__dirname, 'dist/index.html'));
     });
   } else {
-    win.loadFile(path.join(__dirname, 'build/index.html'));
+    win.loadFile(path.join(__dirname, 'dist/index.html'));
   }
 }
 
