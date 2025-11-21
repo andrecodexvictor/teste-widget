@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { WidgetSettings, DEFAULT_SETTINGS, Donation, ThemeMode, WidgetPosition, GoalMode, StreamElementsEvent } from './types';
 import { KawaiiWidget } from './components/KawaiiWidget';
 import { SettingsPanel } from './components/SettingsPanel';
-import { RefreshCw, Monitor, Heart } from 'lucide-react';
+import { RefreshCw, Monitor, Heart, ExternalLink, Save } from 'lucide-react';
 
 const STORAGE_KEY = 'kawaii-widget-settings';
 
@@ -161,6 +161,18 @@ const App: React.FC = () => {
     }
   };
 
+  const handleLaunchOverlay = () => {
+      // Force save current state before opening to ensure consistency
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      
+      // Construct URL
+      const url = new URL(window.location.href);
+      url.searchParams.set('overlay', 'true');
+      
+      // Open in new tab
+      window.open(url.toString(), '_blank');
+  };
+
   // --- RENDER: OVERLAY MODE (For OBS) ---
   if (isOverlayMode) {
       return (
@@ -207,8 +219,17 @@ const App: React.FC = () => {
             />
         </div>
 
-        <div className="p-4 bg-gray-50 border-t border-gray-200 text-center text-xs text-gray-500">
-           Append <b>?overlay=true</b> to URL for OBS
+        <div className="p-4 bg-gray-50 border-t border-gray-200">
+            <button 
+                onClick={handleLaunchOverlay}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-md"
+            >
+                <ExternalLink size={18} />
+                Save & Open Overlay
+            </button>
+            <p className="text-xs text-center text-gray-400 mt-2">
+               Opens a transparent window for OBS
+            </p>
         </div>
       </div>
 
