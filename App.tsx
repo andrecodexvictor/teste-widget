@@ -5,8 +5,20 @@ import { KawaiiWidget } from './components/KawaiiWidget';
 import { SettingsPanel } from './components/SettingsPanel';
 import { RefreshCw, Monitor, Heart } from 'lucide-react';
 
+const STORAGE_KEY = 'kawaii-widget-settings';
+
 const App: React.FC = () => {
-  const [settings, setSettings] = useState<WidgetSettings>(DEFAULT_SETTINGS);
+  // Initialize settings from LocalStorage if available, otherwise use defaults
+  const [settings, setSettings] = useState<WidgetSettings>(() => {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+    } catch (error) {
+        console.error("Error loading settings:", error);
+        return DEFAULT_SETTINGS;
+    }
+  });
+
   const [donations, setDonations] = useState<Donation[]>([
     { id: '1', username: 'NekoChan99', amount: 50, message: 'Keep it up!', timestamp: Date.now() },
     { id: '2', username: 'MarioFan', amount: 20, message: 'Here we go!', timestamp: Date.now() - 10000 },
@@ -26,6 +38,28 @@ const App: React.FC = () => {
         setIsOverlayMode(true);
         document.body.style.backgroundColor = 'transparent';
     }
+  }, []);
+
+  // Save settings to LocalStorage whenever they change
+  useEffect(() => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  }, [settings]);
+
+  // Listen for Storage events (Sync Editor -> Overlay in real-time)
+  useEffect(() => {
+      const handleStorageChange = (e: StorageEvent) => {
+          if (e.key === STORAGE_KEY && e.newValue) {
+              try {
+                  const newSettings = JSON.parse(e.newValue);
+                  setSettings(newSettings);
+              } catch (error) {
+                  console.error("Error syncing settings:", error);
+              }
+          }
+      };
+
+      window.addEventListener('storage', handleStorageChange);
+      return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Simulate adding a donation (used by both manual buttons and SE events)
