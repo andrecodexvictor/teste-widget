@@ -676,8 +676,8 @@ export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations,
                                 isCelebrating={isCelebration} 
                                 isReacting={isShaking || isCelebration}
                                 reactionType={settings.reactionType}
-                                customClass="w-5 h-5" // Smaller class to fit inside
-                                scale={settings.mascotScale}
+                                customClass="flex items-center justify-center" // Removed w-5 h-5 constraint
+                                scale={settings.mascotScale * 0.45} // Scale down to fit visually without distorting aspect ratio
                             />
                          </div>
                     </div>
