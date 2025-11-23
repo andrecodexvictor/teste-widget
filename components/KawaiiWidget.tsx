@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { WidgetSettings, ThemeMode, Donation, MascotType, WidgetStyle, MascotReaction, CompactTitleAlign } from '../types';
 import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift, Glasses, Flame, Timer } from 'lucide-react';
@@ -65,23 +64,26 @@ const GoalTimer: React.FC<{ startDateStr: string, endDateStr: string, textClass:
 
 const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: string, amount: number }> = ({ theme, title, currency, amount }) => {
     
+    // Helper for absolute centering to ensure it sticks to widget but overflows slightly for effect
+    const absoluteCenterClass = "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] min-w-[350px] min-h-[300px] pointer-events-none flex flex-col items-center justify-center";
+
     // Theme-specific styles
     if (theme === ThemeMode.MARIO) {
         return (
-            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 animate-fade-in font-press-start text-center pointer-events-none">
+            <div className={`${absoluteCenterClass} z-[100] bg-black/90 animate-fade-in font-press-start text-center rounded-xl shadow-2xl border-4 border-white`}>
                  {/* Fireworks simulation via CSS */}
                 <div className="firework absolute left-1/4 top-1/2"></div>
                 <div className="firework absolute right-1/4 top-1/2" style={{ animationDelay: '0.5s' }}></div>
                 <div className="firework absolute left-1/2 top-1/3" style={{ animationDelay: '1s' }}></div>
 
                 <div className="relative z-10 animate-pop-in">
-                    <h1 className="text-5xl md:text-7xl text-yellow-400 drop-shadow-[4px_4px_0_#b91c1c] mb-4">
+                    <h1 className="text-4xl md:text-5xl text-yellow-400 drop-shadow-[4px_4px_0_#b91c1c] mb-4 whitespace-nowrap">
                         COURSE CLEAR!
                     </h1>
-                    <div className="text-2xl text-white mt-4 flex items-center justify-center gap-2">
-                        <Star className="text-yellow-400 animate-spin" size={32} fill="currentColor" />
-                        GOAL REACHED: {currency}{amount}
-                        <Star className="text-yellow-400 animate-spin" size={32} fill="currentColor" />
+                    <div className="text-xl text-white mt-4 flex items-center justify-center gap-2">
+                        <Star className="text-yellow-400 animate-spin" size={24} fill="currentColor" />
+                        GOAL: {currency}{amount}
+                        <Star className="text-yellow-400 animate-spin" size={24} fill="currentColor" />
                     </div>
                 </div>
             </div>
@@ -90,53 +92,53 @@ const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: st
 
     if (theme === ThemeMode.NEON) {
         return (
-            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm font-vt323 text-center pointer-events-none">
+            <div className={`${absoluteCenterClass} z-[100] bg-black/95 backdrop-blur-sm font-vt323 text-center border border-fuchsia-500 shadow-[0_0_50px_rgba(255,0,255,0.5)]`}>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-fuchsia-900/40 to-black"></div>
                 
                 <div className="relative z-10">
-                    <h1 className="text-8xl text-cyan-400 animate-glitch tracking-widest drop-shadow-[0_0_20px_rgba(0,255,255,0.8)]">
+                    <h1 className="text-6xl text-cyan-400 animate-glitch tracking-widest drop-shadow-[0_0_20px_rgba(0,255,255,0.8)] whitespace-nowrap">
                         MISSION COMPLETE
                     </h1>
-                    <div className="mt-6 text-4xl text-fuchsia-500 animate-pulse border-t-2 border-b-2 border-fuchsia-500 py-2 inline-block px-8 bg-black/50">
-                        TARGET AQUIRED: {currency}{amount}
+                    <div className="mt-4 text-3xl text-fuchsia-500 animate-pulse border-t-2 border-b-2 border-fuchsia-500 py-2 inline-block px-8 bg-black/50">
+                        TARGET: {currency}{amount}
                     </div>
                 </div>
                 
                 {/* Cyberpunk lines */}
-                <div className="absolute top-0 left-0 w-full h-2 bg-cyan-500 shadow-[0_0_15px_#0ff]"></div>
-                <div className="absolute bottom-0 left-0 w-full h-2 bg-fuchsia-500 shadow-[0_0_15px_#f0f]"></div>
+                <div className="absolute top-0 left-0 w-full h-1 bg-cyan-500 shadow-[0_0_15px_#0ff]"></div>
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-fuchsia-500 shadow-[0_0_15px_#f0f]"></div>
             </div>
         );
     }
 
     // Default KAWAII
     return (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-pink-500/80 backdrop-blur-sm font-mochiy text-center pointer-events-none overflow-hidden">
+        <div className={`${absoluteCenterClass} z-[100] bg-pink-500/90 backdrop-blur-sm font-mochiy text-center overflow-hidden rounded-[2rem] border-8 border-white shadow-2xl`}>
              {/* Rotating rays background */}
              <div className="absolute inset-0 animate-spin-slow opacity-20">
                 <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_0_20deg,white_20_40deg,transparent_40_60deg,white_60_80deg,transparent_80_100deg,white_100_120deg,transparent_120_140deg,white_140_160deg,transparent_160_180deg,white_180_200deg,transparent_200_220deg,white_220_240deg,transparent_240_260deg,white_260_280deg,transparent_280_300deg,white_300_320deg,transparent_320_340deg,white_340_360deg)]"></div>
              </div>
 
-             <div className="relative z-10 animate-pop-in bg-white/90 p-12 rounded-[3rem] border-8 border-pink-300 shadow-[0_0_50px_rgba(255,192,203,0.8)] transform rotate-2">
-                 <div className="absolute -top-12 left-1/2 -translate-x-1/2 text-8xl animate-bounce">
+             <div className="relative z-10 animate-pop-in bg-white/90 p-8 rounded-[2rem] border-4 border-pink-300 shadow-[0_0_30px_rgba(255,192,203,0.8)] transform rotate-2">
+                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-6xl animate-bounce">
                      🎊
                  </div>
-                 <h1 className="text-6xl text-pink-500 drop-shadow-md mb-2">
+                 <h1 className="text-5xl text-pink-500 drop-shadow-md mb-2 mt-4">
                      SUGOI!
                  </h1>
-                 <h2 className="text-3xl text-indigo-400 uppercase tracking-wide">
+                 <h2 className="text-xl text-indigo-400 uppercase tracking-wide">
                      Goal Reached!
                  </h2>
-                 <div className="mt-6 text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500">
+                 <div className="mt-2 text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500">
                      {currency}{amount}
                  </div>
              </div>
 
              {/* Floating Hearts */}
-             {Array.from({ length: 20 }).map((_, i) => (
+             {Array.from({ length: 15 }).map((_, i) => (
                  <div 
                     key={i}
-                    className="absolute text-4xl animate-float opacity-80"
+                    className="absolute text-3xl animate-float opacity-80"
                     style={{
                         left: `${Math.random() * 100}%`,
                         top: `${Math.random() * 100}%`,
@@ -549,11 +551,11 @@ export const KawaiiWidget: React.FC<{
     };
 
     return (
-        <div className={`${isShaking ? 'animate-shake' : ''} transition-all duration-300`}>
+        <div className={`relative ${isShaking ? 'animate-shake' : ''} transition-all duration-300`}>
             
-            {/* Celebration Overlays */}
+            {/* Celebration Overlays - Now Absolute to container to prevent breaking out of preview scale */}
             {isCelebration && <GrandCelebration theme={theme} title={title} currency={currency} amount={goalAmount} />}
-            {isCelebration && <div className="fixed inset-0 pointer-events-none z-50"><div className="firework"></div></div>}
+            {isCelebration && <div className="absolute inset-0 pointer-events-none z-50 overflow-visible"><div className="firework"></div></div>}
             
             {/* Roulette Wheel Overlay */}
             {showRoulette && (
@@ -606,7 +608,7 @@ export const KawaiiWidget: React.FC<{
                             <div className="mt-4 pt-3 border-t border-gray-100/20">
                                 <div className="flex items-center gap-2 overflow-hidden">
                                     <Heart size={14} className={`${theme === ThemeMode.NEON ? 'text-fuchsia-500' : 'text-pink-400'} animate-pulse`} fill="currentColor" />
-                                    <div className="text-xs font-bold text-gray-500 whitespace-nowrap animate-marquee-slow">
+                                    <div className="text-xs font-bold text-gray-500 whitespace-nowrap animate-marquee">
                                         Latest: <span className={`${theme === ThemeMode.NEON ? 'text-cyan-400' : 'text-indigo-500'}`}>{donations[0].username}</span> - {currency}{donations[0].amount} "{donations[0].message}"
                                     </div>
                                 </div>
