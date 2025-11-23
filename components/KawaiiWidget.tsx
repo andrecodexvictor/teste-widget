@@ -56,7 +56,7 @@ const GoalTimer: React.FC<{ startDateStr: string, endDateStr: string, textClass:
     if (!timeLeft) return null;
 
     return (
-        <div className={`flex items-center gap-1 text-xs mt-1 ${textClass} opacity-80`}>
+        <div className={`flex items-center gap-1 text-xs mt-1 ${textClass} opacity-80 whitespace-nowrap`}>
             <Timer size={12} />
             <span>{timeLeft}</span>
         </div>
@@ -151,76 +151,6 @@ const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: st
     );
 };
 
-const Particles: React.FC<{ theme: ThemeMode }> = ({ theme }) => {
-    // Simplified particle system for visual flair
-    const [particles, setParticles] = useState<{id: number, left: number, top: number, delay: number, size: number}[]>([]);
-
-    useEffect(() => {
-        const count = 15;
-        const newParticles = Array.from({ length: count }).map((_, i) => ({
-            id: i,
-            left: Math.random() * 100,
-            top: Math.random() * 100,
-            delay: Math.random() * 5,
-            size: Math.random() * 10 + 5,
-        }));
-        setParticles(newParticles);
-    }, []);
-
-    return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-xl">
-            {particles.map((p) => (
-                <div
-                    key={p.id}
-                    className={`absolute opacity-60 ${theme === ThemeMode.NEON ? 'animate-pulse' : 'animate-float'}`}
-                    style={{
-                        left: `${p.left}%`,
-                        top: `${p.top}%`,
-                        animationDelay: `${p.delay}s`,
-                        width: `${p.size}px`,
-                        height: `${p.size}px`,
-                    }}
-                >
-                    {theme === ThemeMode.KAWAII && <span className="text-pink-200">🌸</span>}
-                    {theme === ThemeMode.MARIO && <span className="text-yellow-400">⭐</span>}
-                    {theme === ThemeMode.NEON && <div className="w-1 h-1 bg-cyan-400 shadow-[0_0_5px_#0ff] rounded-full" />}
-                </div>
-            ))}
-        </div>
-    );
-};
-
-const Confetti: React.FC = () => {
-    const [particles, setParticles] = useState<{id: number, x: number, color: string}[]>([]);
-    
-    useEffect(() => {
-        const colors = ['#FFC0CB', '#FFD700', '#00BFFF', '#EE82EE'];
-        const newParticles = Array.from({ length: 50 }).map((_, i) => ({
-            id: i,
-            x: Math.random() * 100,
-            color: colors[Math.floor(Math.random() * colors.length)]
-        }));
-        setParticles(newParticles);
-    }, []);
-
-    return (
-         <div className="absolute inset-0 overflow-hidden pointer-events-none z-50">
-            {particles.map((p) => (
-                <div 
-                    key={p.id}
-                    className="absolute w-2 h-2 rounded-full animate-bounce"
-                    style={{
-                        left: `${p.x}%`,
-                        backgroundColor: p.color,
-                        top: '-10px',
-                        animationDuration: `${Math.random() * 2 + 1}s`
-                    }}
-                />
-            ))}
-         </div>
-    )
-}
-
 const ProgressBar: React.FC<{ percent: number, settings: WidgetSettings, compact?: boolean }> = ({ percent, settings, compact }) => {
     const clampedPercent = Math.min(100, Math.max(0, percent));
     const { theme, useCustomBarColor, customBarColor } = settings;
@@ -261,6 +191,31 @@ const ProgressBar: React.FC<{ percent: number, settings: WidgetSettings, compact
                 {/* Shine effect (only if not custom color) */}
                 {!useCustomBarColor && <div className="absolute top-0 left-0 w-full h-1/2 bg-white/30"></div>}
             </div>
+            
+            {/* Mascot in Compact Mode - MOVES INSIDE BAR */}
+            {compact && (
+                <div 
+                    className="absolute top-1/2 -translate-y-1/2 z-20 transition-all duration-1000 ease-out will-change-transform"
+                    style={{ 
+                        left: `${clampedPercent}%`,
+                        transform: `translate(-50%, -50%)` // Exactly centered on the progress point
+                    }}
+                >
+                    <div className="flex items-center justify-center">
+                         <Mascot 
+                            type={settings.mascot} 
+                            theme={theme} 
+                            isCelebrating={false} 
+                            isReacting={false}
+                            reactionType={settings.reactionType}
+                            scale={settings.mascotScale * 0.45} // Reduced scale for bar
+                            customClass="origin-center" // No fixed size to prevent stretching
+                            centered={true} // Force center transform origin
+                        />
+                    </div>
+                </div>
+            )}
+
             {/* Percentage Text Overlay - Only for Standard Mode */}
             {!compact && (
                 <div className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${theme === ThemeMode.NEON ? 'text-cyan-100 skew-x-[10deg]' : 'text-gray-700 drop-shadow-md'}`}>
@@ -278,12 +233,14 @@ const Mascot: React.FC<{
     isReacting: boolean, 
     reactionType?: MascotReaction,
     scale: number,
-    customClass?: string 
-}> = ({ type, theme, isCelebrating, isReacting, reactionType = MascotReaction.HAPPY, scale, customClass }) => {
+    customClass?: string,
+    centered?: boolean // Add centered prop
+}> = ({ type, theme, isCelebrating, isReacting, reactionType = MascotReaction.HAPPY, scale, customClass, centered }) => {
     const bounce = isCelebrating ? 'animate-bounce' : 'animate-float';
     const happy = isCelebrating || isReacting;
     
     // Default positioning for Standard Mode if customClass isn't provided
+    // If customClass is provided (like in Compact Mode), we use that instead of the fixed position
     const positionClass = customClass || "absolute -top-16 -left-6 w-24 h-24";
 
     // --- REACTION RENDERING HELPERS ---
@@ -359,7 +316,10 @@ const Mascot: React.FC<{
            {/* Abstract Representation of Mascots using Lucide & DIVs because we don't have external assets */}
            <div 
                 className="relative w-full h-full flex items-center justify-center drop-shadow-xl transition-transform duration-300"
-                style={{ transform: `scale(${scale})`, transformOrigin: 'bottom center' }}
+                style={{ 
+                    transform: `scale(${scale})`, 
+                    transformOrigin: centered ? 'center' : 'bottom center' 
+                }}
             >
               {type === MascotType.CAT_GAMER && (
                   <div className="relative">
@@ -402,143 +362,127 @@ const Mascot: React.FC<{
                    </div>
               )}
               {type === MascotType.LUMA && (
-                  <div className="text-yellow-400 filter drop-shadow-[0_0_10px_rgba(255,255,0,0.6)]">
-                      <Star size={64} fill="currentColor" strokeWidth={1} className={`${happy ? 'animate-spin' : 'animate-spin-slow'}`} />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                           <div className="flex gap-0 items-center justify-center h-6">
-                                {renderEyes(
-                                    <>
-                                        <div className="w-1 h-3 bg-black rounded-full mr-2"></div>
-                                        <div className="w-1 h-3 bg-black rounded-full"></div>
-                                    </>,
-                                    "bg-black"
-                                )}
-                           </div>
-                      </div>
+                  <div className="text-yellow-400 filter drop-shadow-[0_0_10px_rgba(255,215,0,0.6)]">
+                      <Star size={64} fill="currentColor" className={`${isCelebrating ? 'animate-spin' : ''}`} />
+                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1">
+                            {renderEyes(
+                                <>
+                                    <div className="w-1.5 h-3 bg-black rounded-full"></div>
+                                    <div className="w-1.5 h-3 bg-black rounded-full"></div>
+                                </>
+                            )}
+                       </div>
                   </div>
               )}
               {type === MascotType.ROBOT && (
-                  <div className="bg-gray-800 border-2 border-cyan-500 p-2 rounded-lg">
-                      <div className="w-12 h-8 bg-cyan-900 flex items-center justify-center gap-1">
-                          {happy ? (
-                             reactionType === MascotReaction.LOVE ? <Heart size={12} className="text-pink-400 fill-current" /> :
-                             reactionType === MascotReaction.SHOCKED ? <div className="w-6 h-6 border-2 border-white rounded-full"></div> :
-                             reactionType === MascotReaction.ANGRY ? <div className="w-8 h-2 bg-red-500"></div> :
-                             <div className="flex gap-1">
-                                <Heart size={10} className="text-pink-400 fill-current animate-bounce" />
-                                <Heart size={10} className="text-pink-400 fill-current animate-bounce delay-75" />
-                              </div>
-                          ) : (
-                              <>
-                                <div className="w-3 h-3 bg-cyan-400 animate-pulse"></div>
-                                <div className="w-3 h-3 bg-cyan-400 animate-pulse delay-75"></div>
-                              </>
-                          )}
-                      </div>
-                      <div className="h-1 w-full bg-gray-700 mt-1"></div>
-                  </div>
+                   <div className="relative w-14 h-16 bg-gray-300 border-2 border-gray-500 rounded-lg flex flex-col items-center justify-center">
+                       {/* Antenna */}
+                       <div className="absolute -top-4 w-1 h-4 bg-gray-500"></div>
+                       <div className="absolute -top-5 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+                       
+                       {/* Face Screen */}
+                       <div className="w-10 h-8 bg-black rounded-sm flex items-center justify-center border border-gray-600">
+                           {happy ? (
+                               <div className="text-green-400 text-xs font-mono">^ ^</div>
+                           ) : (
+                               <div className="flex gap-2">
+                                   <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                                   <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                               </div>
+                           )}
+                       </div>
+                   </div>
               )}
               {type === MascotType.BUNNY && (
-                  <div className="w-16 h-16 bg-white rounded-full border-2 border-pink-200 relative flex items-center justify-center">
-                      {/* Ears */}
-                      <div className={`absolute -top-6 left-2 w-3 h-8 bg-white border-2 border-pink-200 rounded-full ${happy ? '-rotate-[20deg]' : '-rotate-12'} transition-transform`}>
-                          <div className="w-1 h-5 bg-pink-200 rounded-full mx-auto mt-1"></div>
-                      </div>
-                      <div className={`absolute -top-6 right-2 w-3 h-8 bg-white border-2 border-pink-200 rounded-full ${happy ? 'rotate-[20deg]' : 'rotate-12'} transition-transform`}>
-                          <div className="w-1 h-5 bg-pink-200 rounded-full mx-auto mt-1"></div>
-                      </div>
-                      {/* Face */}
-                      <div className="flex gap-0 mt-1 items-center justify-center h-6 w-full">
-                           {renderEyes(
-                                <>
-                                    <div className="w-2 h-2 bg-gray-800 rounded-full mr-2"></div>
-                                    <div className="w-2 h-2 bg-gray-800 rounded-full"></div>
-                                </>
-                           )}
-                      </div>
-                      <div className="absolute top-10 w-2 h-1 bg-pink-300 rounded-full"></div>
-                  </div>
+                   <div className="relative w-14 h-14 bg-white border-2 border-pink-100 rounded-full flex items-center justify-center">
+                        <div className="absolute -top-6 left-0 w-4 h-8 bg-white border-2 border-pink-100 rounded-full rotate-[-15deg]"></div>
+                        <div className="absolute -top-6 right-0 w-4 h-8 bg-white border-2 border-pink-100 rounded-full rotate-[15deg]"></div>
+                        
+                        <div className="z-10 flex flex-col items-center">
+                             <div className="flex gap-2 mb-1">
+                                {renderEyes(
+                                    <>
+                                        <div className="w-1.5 h-1.5 bg-pink-400 rounded-full"></div>
+                                        <div className="w-1.5 h-1.5 bg-pink-400 rounded-full"></div>
+                                    </>
+                                )}
+                             </div>
+                             <div className="w-1 h-1 bg-pink-300 rounded-full"></div>
+                        </div>
+                   </div>
               )}
               {type === MascotType.GHOST && (
-                  <div className="w-14 h-16 bg-white/90 rounded-t-full rounded-b-lg border-2 border-indigo-100 relative flex items-center justify-center shadow-lg">
-                      {/* Eyes */}
-                      <div className="flex gap-0 -mt-2 items-center justify-center h-6 w-full">
-                          {renderEyes(
-                               <>
-                                <div className="w-3 h-3 bg-gray-800 rounded-full mr-2"></div>
-                                <div className="w-3 h-3 bg-gray-800 rounded-full"></div>
-                               </>
-                          )}
-                      </div>
-                      {/* Blush */}
-                      <div className={`absolute top-8 left-2 w-2 h-1 bg-pink-200 rounded-full ${happy ? 'opacity-100 scale-125' : 'opacity-50'}`}></div>
-                      <div className={`absolute top-8 right-2 w-2 h-1 bg-pink-200 rounded-full ${happy ? 'opacity-100 scale-125' : 'opacity-50'}`}></div>
-                      {/* Tail/Floaty bits at bottom */}
-                      <div className="absolute -bottom-1 flex w-full justify-between px-1">
-                          <div className="w-3 h-3 bg-white rounded-full"></div>
-                          <div className="w-3 h-3 bg-white rounded-full"></div>
-                          <div className="w-3 h-3 bg-white rounded-full"></div>
-                      </div>
-                  </div>
-              )}
-              {type === MascotType.SLIME && (
-                  <div className="w-16 h-14 bg-cyan-400 rounded-t-[50%] rounded-b-2xl border-2 border-cyan-600 relative flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.5)]">
-                      <div className="absolute -top-2 w-4 h-4 bg-cyan-400 rounded-full border-t-2 border-l-2 border-cyan-600 -rotate-45"></div>
-                      <div className="flex gap-0 mt-2 items-center justify-center h-6 w-full">
+                   <div className="relative w-14 h-16 bg-blue-50/90 rounded-t-full rounded-b-lg shadow-lg flex flex-col items-center justify-center overflow-hidden">
+                       <div className="flex gap-2 mb-2">
                            {renderEyes(
                                 <>
-                                    <div className="w-2 h-3 bg-gray-900 rounded-full mr-2"></div>
-                                    <div className="w-2 h-3 bg-gray-900 rounded-full"></div>
-                                </>,
-                                "bg-gray-900"
+                                    <div className="w-2 h-2 bg-indigo-900 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-indigo-900 rounded-full"></div>
+                                </>
+                           )}
+                       </div>
+                       {/* Wavy bottom */}
+                       <div className="absolute bottom-0 w-full h-2 flex">
+                           <div className="flex-1 bg-inherit rounded-t-full transform translate-y-1"></div>
+                           <div className="flex-1 bg-inherit rounded-t-full transform translate-y-1"></div>
+                           <div className="flex-1 bg-inherit rounded-t-full transform translate-y-1"></div>
+                       </div>
+                   </div>
+              )}
+              {type === MascotType.SLIME && (
+                  <div className="relative w-16 h-12 bg-green-400/80 rounded-t-full rounded-b-xl border-b-4 border-green-600/50 flex items-center justify-center">
+                      <div className="absolute top-2 right-3 w-2 h-2 bg-white/50 rounded-full"></div>
+                      <div className="flex gap-4 mt-2">
+                           {renderEyes(
+                                <>
+                                    <div className="w-2 h-2 bg-black rounded-full"></div>
+                                    <div className="w-2 h-2 bg-black rounded-full"></div>
+                                </>
                            )}
                       </div>
-                      {happy && <div className="absolute top-9 w-2 h-1 bg-gray-900/50 rounded-full"></div>}
-                      <div className="absolute top-4 left-2 w-2 h-2 bg-white/50 rounded-full"></div>
                   </div>
               )}
-              {type === MascotType.AXOLOTL && (
-                  <div className="w-16 h-14 bg-pink-300 rounded-2xl border-2 border-pink-400 relative flex items-center justify-center">
+               {type === MascotType.AXOLOTL && (
+                  <div className="relative w-16 h-14 bg-pink-300 rounded-2xl flex items-center justify-center">
                       {/* Gills */}
-                      <div className={`absolute -left-2 top-2 w-2 h-2 bg-pink-500 rounded-full ${happy ? 'animate-pulse' : ''}`}></div>
-                      <div className={`absolute -left-2 top-5 w-2 h-2 bg-pink-500 rounded-full ${happy ? 'animate-pulse' : ''}`}></div>
-                      <div className={`absolute -right-2 top-2 w-2 h-2 bg-pink-500 rounded-full ${happy ? 'animate-pulse' : ''}`}></div>
-                      <div className={`absolute -right-2 top-5 w-2 h-2 bg-pink-500 rounded-full ${happy ? 'animate-pulse' : ''}`}></div>
-                      {/* Face */}
-                      <div className="flex gap-0 items-center justify-center h-6 w-full">
-                          {renderEyes(
+                      <div className="absolute -left-2 top-2 w-3 h-2 bg-pink-500 rounded-full"></div>
+                      <div className="absolute -left-2 top-5 w-3 h-2 bg-pink-500 rounded-full"></div>
+                      <div className="absolute -right-2 top-2 w-3 h-2 bg-pink-500 rounded-full"></div>
+                      <div className="absolute -right-2 top-5 w-3 h-2 bg-pink-500 rounded-full"></div>
+                      
+                      <div className="flex gap-3 mb-1 z-10">
+                            {renderEyes(
                                 <>
-                                    <div className="w-1 h-1 bg-gray-800 rounded-full mr-2"></div>
-                                    <div className="w-1 h-1 bg-gray-800 rounded-full"></div>
+                                    <div className="w-1.5 h-1.5 bg-black rounded-full"></div>
+                                    <div className="w-1.5 h-1.5 bg-black rounded-full"></div>
                                 </>
-                          )}
+                           )}
                       </div>
-                      <div className={`absolute top-9 w-4 h-2 border-b-2 border-gray-700 rounded-full ${happy ? 'h-3' : 'h-2'}`}></div>
+                      <div className="absolute bottom-3 w-3 h-1 border-b border-black/50 rounded-full"></div>
                   </div>
               )}
-              {type === MascotType.DRAGON && (
-                  <div className="w-16 h-16 bg-green-400 rounded-xl border-2 border-green-600 relative flex items-center justify-center">
+               {type === MascotType.DRAGON && (
+                  <div className="relative w-16 h-16">
+                      <div className="absolute bottom-0 w-14 h-12 bg-green-500 rounded-lg border-2 border-green-700"></div>
                       {/* Wings */}
-                      <div className={`absolute -left-4 top-4 w-6 h-4 bg-purple-400 rounded-full -rotate-12 -z-10 ${happy ? 'animate-flap' : ''}`}></div>
-                      <div className={`absolute -right-4 top-4 w-6 h-4 bg-purple-400 rounded-full rotate-12 -z-10 ${happy ? 'animate-flap' : ''}`}></div>
-                      {/* Horns */}
-                      <div className="absolute -top-2 left-3 w-2 h-4 bg-yellow-400 rounded-full -rotate-12"></div>
-                      <div className="absolute -top-2 right-3 w-2 h-4 bg-yellow-400 rounded-full rotate-12"></div>
+                      <div className="absolute top-2 -left-2 w-6 h-6 bg-red-400 rounded-tl-xl rotate-[-20deg] z-0"></div>
+                      <div className="absolute top-2 -right-2 w-6 h-6 bg-red-400 rounded-tr-xl rotate-[20deg] z-0"></div>
                       
-                      <div className="flex gap-0 mt-2 items-center justify-center h-6 w-full">
-                          {renderEyes(
-                                <>
-                                    <div className="w-2 h-2 bg-gray-900 rounded-full mr-2"></div>
-                                    <div className="w-2 h-2 bg-gray-900 rounded-full"></div>
-                                </>,
-                                "bg-gray-900"
-                          )}
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center">
+                          <div className="flex gap-2 mb-1">
+                                {renderEyes(
+                                    <>
+                                        <div className="w-2 h-2 bg-yellow-300 rounded-full border border-black"></div>
+                                        <div className="w-2 h-2 bg-yellow-300 rounded-full border border-black"></div>
+                                    </>
+                                )}
+                          </div>
+                          {/* Snout */}
+                          <div className="w-6 h-3 bg-green-300 rounded-full flex justify-between px-1">
+                              <div className="w-1 h-1 bg-black rounded-full mt-1"></div>
+                              <div className="w-1 h-1 bg-black rounded-full mt-1"></div>
+                          </div>
                       </div>
-                      {/* Snout */}
-                      <div className="absolute bottom-3 w-8 h-4 bg-green-300 rounded-full opacity-50"></div>
-                      {reactionType === MascotReaction.ANGRY && happy && (
-                          <Flame size={12} className="absolute -right-4 bottom-2 text-red-500 animate-pulse" fill="currentColor" />
-                      )}
                   </div>
               )}
            </div>
@@ -546,233 +490,171 @@ const Mascot: React.FC<{
     );
 };
 
-const RecentDonationsTicker: React.FC<{ donations: Donation[], theme: ThemeMode }> = ({ donations, theme }) => {
-    if (donations.length === 0) return null;
+// --- Main Widget ---
 
-    let textClass = "text-gray-600";
-    if (theme === ThemeMode.MARIO) textClass = "text-white font-press-start text-[10px]";
-    if (theme === ThemeMode.NEON) textClass = "text-cyan-300 font-mono text-xs";
-    if (theme === ThemeMode.KAWAII) textClass = "text-pink-600 font-fredoka text-sm";
+export const KawaiiWidget: React.FC<{ 
+    settings: WidgetSettings; 
+    donations: Donation[];
+    isShaking: boolean;
+    isCelebration: boolean;
+    showRoulette: boolean;
+    onRouletteComplete: () => void;
+}> = ({ settings, donations, isShaking, isCelebration, showRoulette, onRouletteComplete }) => {
+    
+    const { 
+        theme, 
+        style, 
+        currency, 
+        title, 
+        goalAmount, 
+        currentAmount, 
+        mascot, 
+        primaryColor, 
+        secondaryColor 
+    } = settings;
+
+    const percent = Math.min(100, (currentAmount / goalAmount) * 100);
+
+    // Dynamic Classes based on Theme
+    const getContainerClass = () => {
+        if (style === WidgetStyle.COMPACT) {
+             return "relative w-[400px] flex flex-col gap-1";
+        }
+
+        switch(theme) {
+            case ThemeMode.MARIO:
+                return "relative bg-[#c84c0c] border-4 border-black p-1 rounded-lg shadow-[8px_8px_0_#000]";
+            case ThemeMode.NEON:
+                return "relative bg-black/90 border border-fuchsia-500 p-6 rounded-none shadow-[0_0_20px_rgba(255,0,255,0.3)] clip-path-cyberpunk";
+            default: // KAWAII
+                return "relative bg-white/95 backdrop-blur-md border-4 border-pink-200 p-6 rounded-[2rem] shadow-xl";
+        }
+    };
+
+    const getTitleClass = () => {
+        if (style === WidgetStyle.COMPACT) return ""; // Handled inline for Compact
+        switch(theme) {
+            case ThemeMode.MARIO: return "font-press-start text-white text-shadow-retro text-sm mb-2 text-center tracking-widest";
+            case ThemeMode.NEON: return "font-vt323 text-3xl text-cyan-400 text-shadow-neon mb-1 text-center uppercase tracking-widest";
+            default: return "font-fredoka text-xl text-gray-600 font-bold mb-1 text-center uppercase tracking-wider";
+        }
+    };
+
+    const getValueClass = () => {
+         switch(theme) {
+            case ThemeMode.MARIO: return "font-press-start text-xs text-yellow-200 mt-1 block text-right";
+            case ThemeMode.NEON: return "font-vt323 text-xl text-fuchsia-400 mt-1 block text-right";
+            default: return "font-mochiy text-sm text-pink-500 mt-1 block text-right";
+        }
+    };
+
+    // Compact Mode Specifics
+    const compactAlignClass = settings.compactTitleAlign === CompactTitleAlign.RIGHT ? 'items-end text-right' : 'items-start text-left';
 
     return (
-        <div className="w-full overflow-hidden h-6 mt-2 relative">
-            <div className="whitespace-nowrap animate-marquee flex gap-8 absolute items-center h-full">
-                {donations.map((d) => (
-                    <span key={d.id} className={`flex items-center gap-1 ${textClass}`}>
-                        <Heart size={10} fill="currentColor" className="opacity-70" />
-                        <span className="font-bold">{d.username}:</span>
-                        <span>{d.amount}</span>
-                    </span>
-                ))}
-                 {donations.map((d) => (
-                    <span key={`${d.id}-dup`} className={`flex items-center gap-1 ${textClass}`}>
-                        <Heart size={10} fill="currentColor" className="opacity-70" />
-                        <span className="font-bold">{d.username}:</span>
-                        <span>{d.amount}</span>
-                    </span>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-// --- Main Component ---
-
-interface KawaiiWidgetProps {
-  settings: WidgetSettings;
-  donations: Donation[];
-  isShaking: boolean;
-  isCelebration: boolean;
-  showRoulette: boolean;
-  onRouletteComplete: () => void;
-}
-
-export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations, isShaking, isCelebration, showRoulette, onRouletteComplete }) => {
-    const percentage = Math.min(100, (settings.currentAmount / settings.goalAmount) * 100);
-    const topDonor = donations.reduce((prev, current) => (prev.amount > current.amount) ? prev : current, donations[0]);
-
-    // Dynamic Styles based on Theme
-    const styles = useMemo(() => {
-        switch(settings.theme) {
-            case ThemeMode.MARIO:
-                return {
-                    container: 'bg-blue-500 border-4 border-yellow-400 shadow-[8px_8px_0px_#000]',
-                    font: 'font-press-start',
-                    textPrimary: 'text-white drop-shadow-[2px_2px_0_#000]',
-                    textSecondary: 'text-yellow-200',
-                    textCompactOutline: 'text-white drop-shadow-[2px_2px_0_#000]',
-                    icon: <Coins className="text-yellow-300 animate-pulse" size={20} />
-                };
-            case ThemeMode.NEON:
-                return {
-                    container: 'bg-black/90 border-2 border-fuchsia-500 shadow-[0_0_30px_rgba(255,0,255,0.3)] rounded-sm neon-pulse',
-                    font: 'font-vt323',
-                    textPrimary: 'text-fuchsia-400 text-shadow-neon',
-                    textSecondary: 'text-cyan-400',
-                    textCompactOutline: 'text-cyan-100 text-shadow-[0_0_5px_#0ff]',
-                    icon: <Zap className="text-cyan-400" size={20} />
-                };
-            case ThemeMode.KAWAII:
-            default:
-                return {
-                    container: 'bg-white/95 border-4 border-pink-200 rounded-3xl shadow-xl',
-                    font: 'font-mochiy',
-                    textPrimary: 'text-pink-500',
-                    textSecondary: 'text-indigo-400',
-                    textCompactOutline: 'text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] stroke-black',
-                    icon: <Sparkles className="text-yellow-400" size={20} />
-                };
-        }
-    }, [settings.theme]);
-
-    // --- RENDER: COMPACT MODE ---
-    if (settings.style === WidgetStyle.COMPACT) {
-        const titleAlignClass = settings.compactTitleAlign === CompactTitleAlign.RIGHT ? 'flex-row-reverse' : '';
-
-        return (
-            <>
-            {/* Full Screen Celebration Overlay */}
-            {isCelebration && (
-                <GrandCelebration 
-                    theme={settings.theme} 
-                    title={settings.title} 
-                    currency={settings.currency} 
-                    amount={settings.goalAmount} 
-                />
-            )}
+        <div className={`${isShaking ? 'animate-shake' : ''} transition-all duration-300`}>
             
-            <div className={`relative w-[400px] p-2 transition-transform ${isShaking ? 'animate-shake' : ''} ${styles.font}`}>
-                {/* Event Roulette Overlay - Using fixed size to match Standard mode look, centered on the bar */}
-                {showRoulette && settings.enableRoulette && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[350px] h-[350px]">
-                         <RouletteWheel theme={settings.theme} events={settings.rouletteEvents} onComplete={onRouletteComplete} />
-                    </div>
+            {/* Celebration Overlays */}
+            {isCelebration && <GrandCelebration theme={theme} title={title} currency={currency} amount={goalAmount} />}
+            {isCelebration && <div className="fixed inset-0 pointer-events-none z-50"><div className="firework"></div></div>}
+            
+            {/* Roulette Wheel Overlay */}
+            {showRoulette && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center">
+                    <RouletteWheel 
+                        theme={theme} 
+                        events={settings.rouletteEvents} 
+                        onComplete={onRouletteComplete} 
+                    />
+                </div>
+            )}
+
+            <div className={getContainerClass()}>
+                
+                {/* Standard Mode Content */}
+                {style === WidgetStyle.STANDARD && (
+                    <>
+                        {/* Inner Border for Mario */}
+                        {theme === ThemeMode.MARIO && <div className="absolute inset-1 border-2 border-[#f8d878] pointer-events-none rounded-lg"></div>}
+                        
+                        {/* Floating Mascot */}
+                        <Mascot 
+                            type={mascot} 
+                            theme={theme} 
+                            isCelebrating={isCelebration} 
+                            isReacting={isShaking} 
+                            reactionType={settings.reactionType}
+                            scale={settings.mascotScale}
+                        />
+
+                        {/* Header */}
+                        <div className={getTitleClass()} style={{ color: settings.useCustomTitleColor ? settings.customTitleColor : undefined, fontSize: settings.titleFontSize ? `${settings.titleFontSize}px` : undefined }}>
+                            {title}
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="relative z-10">
+                            <ProgressBar percent={percent} settings={settings} />
+                            
+                            <div className="flex justify-between items-end mt-2">
+                                <GoalTimer startDateStr={settings.goalStartDate} endDateStr={settings.goalEndDate} textClass={getValueClass()} />
+                                <span className={getValueClass()}>
+                                    {currency}{currentAmount} <span className="text-[0.8em] opacity-70">/ {currency}{goalAmount}</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Recent Donation (Simple Ticker) */}
+                        {settings.showRecentDonations && donations.length > 0 && (
+                            <div className="mt-4 pt-3 border-t border-gray-100/20">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <Heart size={14} className={`${theme === ThemeMode.NEON ? 'text-fuchsia-500' : 'text-pink-400'} animate-pulse`} fill="currentColor" />
+                                    <div className="text-xs font-bold text-gray-500 whitespace-nowrap animate-marquee-slow">
+                                        Latest: <span className={`${theme === ThemeMode.NEON ? 'text-cyan-400' : 'text-indigo-500'}`}>{donations[0].username}</span> - {currency}{donations[0].amount} "{donations[0].message}"
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
 
-                <div className="flex flex-col gap-1">
-                    {/* Header Info (Text needs outline/shadow because bg is transparent) */}
-                    <div className={`flex justify-between items-end px-1 ${titleAlignClass}`}>
-                        <div className="flex flex-col items-start">
-                           <h2 className={`text-sm uppercase font-bold ${styles.textCompactOutline} drop-shadow-md`}>{settings.title}</h2>
-                           <GoalTimer startDateStr={settings.goalStartDate} endDateStr={settings.goalEndDate} textClass={styles.textCompactOutline} />
+                {/* Compact Mode Content */}
+                {style === WidgetStyle.COMPACT && (
+                    <div className={`flex flex-col ${compactAlignClass} w-full`}>
+                        {/* Title - Movable Vertically */}
+                        <div 
+                            className={`text-sm font-bold mb-1 drop-shadow-md ${
+                                theme === ThemeMode.NEON ? 'font-vt323 text-cyan-400 text-lg' : 
+                                theme === ThemeMode.MARIO ? 'font-press-start text-[10px] text-white' : 
+                                'font-fredoka text-gray-700'
+                            }`}
+                            style={{ 
+                                fontSize: `${settings.titleFontSize}px`,
+                                color: settings.useCustomTitleColor ? settings.customTitleColor : undefined,
+                                transform: `translateY(${settings.compactTitleOffset}px)`,
+                                transition: 'transform 0.2s ease-out'
+                            }}
+                        >
+                            {title}
                         </div>
-                        <div className={`text-xl font-black ${styles.textCompactOutline} drop-shadow-md`}>
-                            {settings.currency}{settings.currentAmount}
-                            <span className="text-xs opacity-90 ml-1">/ {settings.goalAmount}</span>
+                        
+                        {/* Bar */}
+                        <ProgressBar percent={percent} settings={settings} compact />
+                        
+                        {/* Footer Info */}
+                        <div className="flex justify-between w-full mt-1 px-1">
+                            <GoalTimer startDateStr={settings.goalStartDate} endDateStr={settings.goalEndDate} textClass="font-mono text-xs text-white drop-shadow-md" />
+                            <span className={`text-xs font-bold drop-shadow-md ${
+                                theme === ThemeMode.NEON ? 'font-vt323 text-fuchsia-400 text-lg' : 
+                                theme === ThemeMode.MARIO ? 'font-press-start text-[10px] text-white' : 
+                                'font-fredoka text-white'
+                            }`}>
+                                {currency}{currentAmount} / {currency}{goalAmount}
+                            </span>
                         </div>
                     </div>
-
-                    {/* Bar with Mascot INSIDE */}
-                    <div className="relative w-full mt-2">
-                         <ProgressBar percent={percentage} settings={settings} compact={true} />
-                         {/* The Mascot moves with left: percentage% */}
-                         <div 
-                            className="absolute top-1/2 -translate-y-1/2 transition-all duration-1000 ease-linear z-20"
-                            style={{ left: `${percentage}%`, transform: `translateX(-50%) translateY(-50%)` }}
-                         >
-                             <Mascot 
-                                type={settings.mascot} 
-                                theme={settings.theme} 
-                                isCelebrating={isCelebration} 
-                                isReacting={isShaking || isCelebration}
-                                reactionType={settings.reactionType}
-                                customClass="flex items-center justify-center" // Removed w-5 h-5 constraint
-                                scale={settings.mascotScale * 0.45} // Scale down to fit visually without distorting aspect ratio
-                            />
-                         </div>
-                    </div>
-                </div>
+                )}
             </div>
-            </>
-        );
-    }
-
-    // --- RENDER: STANDARD MODE (Original Card) ---
-    return (
-        <>
-        {/* Full Screen Celebration Overlay */}
-        {isCelebration && (
-            <GrandCelebration 
-                theme={settings.theme} 
-                title={settings.title} 
-                currency={settings.currency} 
-                amount={settings.goalAmount} 
-            />
-        )}
-
-        <div 
-            className={`relative w-[350px] p-6 transition-transform ${isShaking ? 'animate-shake' : 'animate-float'} ${styles.container} ${styles.font}`}
-        >
-            {/* Event Roulette Overlay */}
-            {showRoulette && settings.enableRoulette && (
-                <RouletteWheel 
-                    theme={settings.theme} 
-                    events={settings.rouletteEvents} 
-                    onComplete={onRouletteComplete} 
-                />
-            )}
-
-            {isCelebration && <Confetti />}
-            <Particles theme={settings.theme} />
-
-            {/* Mascot (Fixed position) */}
-            <Mascot 
-                type={settings.mascot} 
-                theme={settings.theme} 
-                isCelebrating={isCelebration} 
-                isReacting={isShaking || isCelebration}
-                reactionType={settings.reactionType}
-                scale={settings.mascotScale}
-            />
-
-            {/* Header */}
-            <div className="flex justify-between items-end relative z-10 pl-12">
-                <div className="flex flex-col">
-                    <h2 className={`text-lg uppercase tracking-wider font-bold ${styles.textSecondary}`}>{settings.title}</h2>
-                    <div className={`text-3xl font-black flex items-center gap-2 ${styles.textPrimary}`}>
-                        {styles.icon}
-                        <span>{settings.currency}{settings.currentAmount}</span>
-                        <span className="text-sm opacity-70 self-end mb-1">/ {settings.goalAmount}</span>
-                    </div>
-                </div>
-            </div>
-            
-            {/* Timer for Standard Mode */}
-            <GoalTimer startDateStr={settings.goalStartDate} endDateStr={settings.goalEndDate} textClass={styles.textSecondary} />
-
-            {/* Bar */}
-            <div className="relative z-10 mt-1">
-                <ProgressBar percent={percentage} settings={settings} />
-            </div>
-
-            {/* Footer / Top Donor */}
-            <div className="mt-4 pt-2 border-t border-black/5 relative z-10">
-                 {settings.showTopDonor && topDonor && (
-                     <div className={`flex items-center gap-2 text-xs ${styles.textSecondary} mb-1`}>
-                         <Crown size={14} className="text-yellow-500" />
-                         <span className="opacity-75">MVP:</span>
-                         <span className="font-bold">{topDonor.username}</span>
-                         <span className="opacity-75">({settings.currency}{topDonor.amount})</span>
-                     </div>
-                 )}
-                 
-                 {settings.showRecentDonations && (
-                     <RecentDonationsTicker donations={donations} theme={settings.theme} />
-                 )}
-            </div>
-            
-            {/* Decoration Elements for Mario Theme */}
-            {settings.theme === ThemeMode.MARIO && (
-                <>
-                    <div className="absolute -top-3 right-4 w-8 h-8 bg-orange-600 border-2 border-black grid grid-cols-2 gap-1 p-1 shadow-[2px_2px_0_#000]">
-                        <div className="bg-yellow-900 rounded-full w-1 h-1 place-self-center"></div>
-                        <div className="bg-yellow-900 rounded-full w-1 h-1 place-self-center"></div>
-                        <div className="bg-yellow-900 rounded-full w-1 h-1 place-self-center"></div>
-                        <div className="bg-yellow-900 rounded-full w-1 h-1 place-self-center"></div>
-                    </div>
-                </>
-            )}
         </div>
-        </>
     );
 };

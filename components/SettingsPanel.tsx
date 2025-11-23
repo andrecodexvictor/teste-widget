@@ -1,7 +1,8 @@
 
+
 import React, { useState } from 'react';
 import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle, MascotReaction, CompactTitleAlign } from '../types';
-import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap, Check, Wifi, WifiOff, Timer, AlignLeft, AlignRight } from 'lucide-react';
+import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap, Check, Wifi, WifiOff, Timer, AlignLeft, AlignRight, Type, MoveVertical } from 'lucide-react';
 
 interface SettingsPanelProps {
     settings: WidgetSettings;
@@ -159,6 +160,71 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                         />
                     </div>
                 </div>
+            </section>
+
+            {/* Typography & Title Positioning */}
+            <section className="space-y-3">
+                 <h3 className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
+                    <Type size={14} /> Typography & Positioning
+                </h3>
+                
+                {/* Font Size & Title Color */}
+                <div className="grid grid-cols-2 gap-4">
+                     <div>
+                        <label className="block text-xs text-gray-500 mb-1">Title Font Size</label>
+                        <input 
+                            type="range" 
+                            min="10" 
+                            max="36" 
+                            value={settings.titleFontSize}
+                            onChange={(e) => handleChange('titleFontSize', parseInt(e.target.value))}
+                            className="w-full"
+                        />
+                        <div className="text-[10px] text-right text-gray-400">{settings.titleFontSize}px</div>
+                    </div>
+                    <div>
+                         <label className="block text-xs text-gray-500 mb-1">Title Color</label>
+                         <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={settings.useCustomTitleColor}
+                                onChange={(e) => handleChange('useCustomTitleColor', e.target.checked)}
+                                className="w-3 h-3 text-indigo-600 rounded"
+                                title="Enable custom title color"
+                            />
+                            <input
+                                type="color"
+                                value={settings.customTitleColor}
+                                onChange={(e) => handleChange('customTitleColor', e.target.value)}
+                                className={`w-full h-8 rounded border border-gray-300 cursor-pointer ${!settings.useCustomTitleColor ? 'opacity-50 pointer-events-none' : ''}`}
+                            />
+                         </div>
+                    </div>
+                </div>
+
+                {/* Vertical Offset (Only relevant for Compact mode usually, but can apply to both) */}
+                {settings.style === WidgetStyle.COMPACT && (
+                    <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
+                        <label className="block text-xs text-indigo-700 font-bold mb-1 flex items-center gap-1">
+                            <MoveVertical size={12} />
+                            Compact Title Vertical Offset
+                        </label>
+                        <input 
+                            type="range" 
+                            min="-50" 
+                            max="50" 
+                            step="1"
+                            value={settings.compactTitleOffset}
+                            onChange={(e) => handleChange('compactTitleOffset', parseInt(e.target.value))}
+                            className="w-full"
+                        />
+                        <div className="flex justify-between text-[10px] text-gray-400">
+                            <span>Up</span>
+                            <span>{settings.compactTitleOffset}px</span>
+                            <span>Down</span>
+                        </div>
+                    </div>
+                )}
             </section>
 
             {/* Goal Configuration */}

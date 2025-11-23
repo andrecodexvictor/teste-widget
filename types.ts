@@ -87,6 +87,12 @@ export interface WidgetSettings {
   useCustomBarColor: boolean;
   customBarColor: string;
   compactTitleAlign: CompactTitleAlign;
+  
+  // Title Customization
+  titleFontSize: number;
+  compactTitleOffset: number; // Vertical move
+  useCustomTitleColor: boolean;
+  customTitleColor: string;
 
   // Roulette / Events
   enableRoulette: boolean;
@@ -121,6 +127,11 @@ export const DEFAULT_SETTINGS: WidgetSettings = {
   useCustomBarColor: false,
   customBarColor: '#4ade80',
   compactTitleAlign: CompactTitleAlign.LEFT,
+  
+  titleFontSize: 14,
+  compactTitleOffset: 0,
+  useCustomTitleColor: false,
+  customTitleColor: '#ffffff',
   
   enableRoulette: true,
   rouletteEvents: [
