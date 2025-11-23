@@ -7,12 +7,28 @@ import { RefreshCw, Monitor, Heart, ExternalLink, Save } from 'lucide-react';
 const STORAGE_KEY = 'kawaii-widget-settings';
 
 const App: React.FC = () => {
-  // Initialize settings from LocalStorage if available, otherwise use defaults
+  // Initialize settings
+  // Priority: 1. URL Params (Snapshot) -> 2. LocalStorage -> 3. Defaults
   const [settings, setSettings] = useState<WidgetSettings>(() => {
     try {
+        // 1. Check URL Params (for Overlay Mode snapshot)
+        const params = new URLSearchParams(window.location.search);
+        const dataParam = params.get('data');
+        
+        if (dataParam) {
+            try {
+                // Decode base64 utf-8 string
+                const decoded = decodeURIComponent(atob(dataParam));
+                const parsed = JSON.parse(decoded);
+                return { ...DEFAULT_SETTINGS, ...parsed };
+            } catch (e) {
+                console.error("Failed to parse URL settings", e);
+            }
+        }
+
+        // 2. Check LocalStorage
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
-            // Merge with defaults to ensure new fields (like API tokens) exist even if old save data is loaded
             return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
         }
         return DEFAULT_SETTINGS;
@@ -206,12 +222,22 @@ const App: React.FC = () => {
   };
 
   const handleLaunchOverlay = () => {
-      // Force save current state before opening to ensure consistency
+      // Force save current state before opening
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
       
-      // Construct URL
       const url = new URL(window.location.href);
       url.searchParams.set('overlay', 'true');
+      
+      // Encode settings into URL to guarantee persistence in the new window
+      // We use base64 encoding of the JSON string to keep the URL robust
+      try {
+          const settingsStr = JSON.stringify(settings);
+          // encodeURIComponent fixes issues with special chars like currency symbols before base64
+          const encodedSettings = btoa(encodeURIComponent(settingsStr));
+          url.searchParams.set('data', encodedSettings);
+      } catch (e) {
+          console.error("Failed to encode settings for URL", e);
+      }
       
       // Open in new tab
       window.open(url.toString(), '_blank');
