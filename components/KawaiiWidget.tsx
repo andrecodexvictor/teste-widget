@@ -548,9 +548,6 @@ export const KawaiiWidget: React.FC<{
         }
     };
 
-    // Compact Mode Specifics
-    const compactAlignClass = settings.compactTitleAlign === CompactTitleAlign.RIGHT ? 'items-end text-right' : 'items-start text-left';
-
     return (
         <div className={`${isShaking ? 'animate-shake' : ''} transition-all duration-300`}>
             
@@ -620,37 +617,48 @@ export const KawaiiWidget: React.FC<{
 
                 {/* Compact Mode Content */}
                 {style === WidgetStyle.COMPACT && (
-                    <div className={`flex flex-col ${compactAlignClass} w-full`}>
-                        {/* Title - Movable Vertically */}
-                        <div 
-                            className={`text-sm font-bold mb-1 drop-shadow-md ${
-                                theme === ThemeMode.NEON ? 'font-vt323 text-cyan-400 text-lg' : 
-                                theme === ThemeMode.MARIO ? 'font-press-start text-[10px] text-white' : 
-                                'font-fredoka text-gray-700'
-                            }`}
-                            style={{ 
-                                fontSize: `${settings.titleFontSize}px`,
-                                color: settings.useCustomTitleColor ? settings.customTitleColor : undefined,
-                                transform: `translateY(${settings.compactTitleOffset}px)`,
-                                transition: 'transform 0.2s ease-out'
-                            }}
-                        >
-                            {title}
+                    <div className="flex flex-col w-full">
+                        {/* Header Row: Title & Amount */}
+                        <div className={`flex items-end justify-between w-full mb-1 ${settings.compactTitleAlign === CompactTitleAlign.RIGHT ? 'flex-row-reverse' : 'flex-row'}`}>
+                            
+                            {/* Title - Movable Vertically */}
+                            <div 
+                                className={`text-sm font-bold drop-shadow-md ${
+                                    theme === ThemeMode.NEON ? 'font-vt323 text-cyan-400 text-lg' : 
+                                    theme === ThemeMode.MARIO ? 'font-press-start text-[10px] text-white' : 
+                                    'font-fredoka text-gray-700'
+                                }`}
+                                style={{ 
+                                    fontSize: `${settings.titleFontSize}px`,
+                                    color: settings.useCustomTitleColor ? settings.customTitleColor : undefined,
+                                    transform: `translateY(${settings.compactTitleOffset}px)`,
+                                    transition: 'transform 0.2s ease-out'
+                                }}
+                            >
+                                {title}
+                            </div>
+
+                             {/* Goal Amount - Always opposite to title */}
+                             <div 
+                                className={`text-xs font-bold drop-shadow-md whitespace-nowrap ${
+                                    theme === ThemeMode.NEON ? 'font-vt323 text-fuchsia-400 text-lg' : 
+                                    theme === ThemeMode.MARIO ? 'font-press-start text-[10px] text-white' : 
+                                    'font-fredoka text-gray-600'
+                                }`}
+                                style={{
+                                     color: settings.useCustomTitleColor ? settings.customTitleColor : undefined 
+                                }}
+                             >
+                                {currency}{currentAmount} <span className="opacity-80">/ {currency}{goalAmount}</span>
+                            </div>
                         </div>
                         
                         {/* Bar */}
                         <ProgressBar percent={percent} settings={settings} compact />
                         
-                        {/* Footer Info */}
-                        <div className="flex justify-between w-full mt-1 px-1">
+                        {/* Footer Info: Timer only */}
+                        <div className={`flex w-full mt-1 px-1 ${settings.compactTitleAlign === CompactTitleAlign.RIGHT ? 'justify-end' : 'justify-start'}`}>
                             <GoalTimer startDateStr={settings.goalStartDate} endDateStr={settings.goalEndDate} textClass="font-mono text-xs text-white drop-shadow-md" />
-                            <span className={`text-xs font-bold drop-shadow-md ${
-                                theme === ThemeMode.NEON ? 'font-vt323 text-fuchsia-400 text-lg' : 
-                                theme === ThemeMode.MARIO ? 'font-press-start text-[10px] text-white' : 
-                                'font-fredoka text-white'
-                            }`}>
-                                {currency}{currentAmount} / {currency}{goalAmount}
-                            </span>
                         </div>
                     </div>
                 )}
