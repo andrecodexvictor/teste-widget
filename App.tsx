@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { WidgetSettings, DEFAULT_SETTINGS, Donation, ThemeMode, WidgetPosition, GoalMode, StreamElementsEvent } from './types';
 import { KawaiiWidget } from './components/KawaiiWidget';
@@ -32,7 +30,11 @@ const App: React.FC = () => {
   const [isShaking, setIsShaking] = useState(false);
   const [isCelebration, setIsCelebration] = useState(false);
   const [showRoulette, setShowRoulette] = useState(false);
+  const [socketStatus, setSocketStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   
+  // Debounce logic for StreamElements Token to prevent socket spam while typing
+  const [debouncedToken, setDebouncedToken] = useState(settings.streamElementsToken);
+
   // State for Overlay Mode (active when ?overlay=true in URL)
   const [isOverlayMode, setIsOverlayMode] = useState(false);
 
@@ -45,10 +47,18 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Save settings to LocalStorage whenever they change
+  // Save settings to LocalStorage whenever they change (Instant Save)
   useEffect(() => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   }, [settings]);
+
+  // Debounce the token update for socket connection (waits 1s after typing stops)
+  useEffect(() => {
+      const handler = setTimeout(() => {
+          setDebouncedToken(settings.streamElementsToken);
+      }, 1000);
+      return () => clearTimeout(handler);
+  }, [settings.streamElementsToken]);
 
   // Listen for Storage events (Sync Editor -> Overlay in real-time)
   useEffect(() => {
@@ -124,13 +134,19 @@ const App: React.FC = () => {
 
   // --- StreamElements Socket Connection Logic ---
   useEffect(() => {
-    const token = settings.streamElementsToken;
-    if (!token) return;
+    const token = debouncedToken; // Use the debounced token
+    if (!token) {
+        setSocketStatus('disconnected');
+        return;
+    }
+
+    setSocketStatus('connecting');
 
     // Access the global 'io' object injected by the script tag in index.html
     const io = (window as any).io;
     if (!io) {
         console.error("Socket.io script not loaded");
+        setSocketStatus('disconnected');
         return;
     }
 
@@ -145,6 +161,12 @@ const App: React.FC = () => {
 
     socket.on('authenticated', () => {
         console.log('Successfully authenticated with StreamElements');
+        setSocketStatus('connected');
+    });
+
+    socket.on('unauthorized', (data: any) => {
+        console.error('StreamElements Auth Failed:', data);
+        setSocketStatus('disconnected');
     });
 
     socket.on('event', (data: any) => {
@@ -160,6 +182,7 @@ const App: React.FC = () => {
 
     socket.on('disconnect', () => {
         console.log('Disconnected from StreamElements');
+        setSocketStatus('disconnected');
     });
 
     // Cleanup on unmount or token change
@@ -167,11 +190,7 @@ const App: React.FC = () => {
         socket.disconnect();
     };
 
-  }, [settings.streamElementsToken, simulateDonation]);
-
-  // --- LivePix Logic Placeholder ---
-  // Note: LivePix usually provides a Widget URL or specific socket documentation.
-  // If using a standard WebSocket, logic would go here similar to above.
+  }, [debouncedToken, simulateDonation]);
 
   // Helper to determine absolute positioning classes based on settings
   const getPositionClasses = (pos: WidgetPosition) => {
@@ -241,6 +260,7 @@ const App: React.FC = () => {
                 settings={settings} 
                 setSettings={setSettings} 
                 onSimulateDonation={simulateDonation}
+                socketStatus={socketStatus}
             />
         </div>
 

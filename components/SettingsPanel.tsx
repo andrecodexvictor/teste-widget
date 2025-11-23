@@ -1,15 +1,16 @@
 
 import React, { useState } from 'react';
 import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle, MascotReaction } from '../types';
-import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap } from 'lucide-react';
+import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap, Check, Wifi, WifiOff } from 'lucide-react';
 
 interface SettingsPanelProps {
     settings: WidgetSettings;
     setSettings: React.Dispatch<React.SetStateAction<WidgetSettings>>;
     onSimulateDonation: (amount: number, user: string, msg: string) => void;
+    socketStatus: 'disconnected' | 'connecting' | 'connected';
 }
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSettings, onSimulateDonation }) => {
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSettings, onSimulateDonation, socketStatus }) => {
     
     const [showSecrets, setShowSecrets] = useState(false);
 
@@ -47,8 +48,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
             </section>
 
             {/* Integrations Section */}
-            <section className="space-y-3 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
-                <div className="flex justify-between items-center">
+            <section className="space-y-3 bg-indigo-50 p-4 rounded-xl border border-indigo-100 relative overflow-hidden">
+                <div className="flex justify-between items-center mb-2">
                     <h3 className="text-xs font-bold uppercase text-indigo-600 flex items-center gap-2">
                         <Globe size={14} /> Real-time Integrations
                     </h3>
@@ -63,34 +64,61 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                            <Zap size={12} className="text-yellow-500" /> StreamElements JWT Token
+                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center justify-between">
+                            <span className="flex items-center gap-1"><Zap size={12} className="text-yellow-500" /> StreamElements JWT Token</span>
+                            {/* Connection Status Badge */}
+                            {settings.streamElementsToken && (
+                                <span className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full ${
+                                    socketStatus === 'connected' ? 'bg-green-100 text-green-700' : 
+                                    socketStatus === 'connecting' ? 'bg-yellow-100 text-yellow-700' : 
+                                    'bg-red-100 text-red-700'
+                                }`}>
+                                    {socketStatus === 'connected' ? <Wifi size={10} /> : <WifiOff size={10} />}
+                                    {socketStatus === 'connected' ? 'Connected' : socketStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
+                                </span>
+                            )}
                         </label>
-                        <input 
-                            type={showSecrets ? "text" : "password"}
-                            value={settings.streamElementsToken || ''}
-                            onChange={(e) => handleChange('streamElementsToken', e.target.value)}
-                            placeholder="Paste JWT Token here..."
-                            className="w-full p-2 bg-white border border-indigo-200 rounded-md text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
-                        />
+                        <div className="relative">
+                            <input 
+                                type={showSecrets ? "text" : "password"}
+                                value={settings.streamElementsToken || ''}
+                                onChange={(e) => handleChange('streamElementsToken', e.target.value)}
+                                placeholder="Paste JWT Token here..."
+                                className={`w-full p-2 pr-8 bg-white border rounded-md text-xs focus:ring-2 outline-none transition-colors ${
+                                    socketStatus === 'connected' ? 'border-green-300 ring-green-100' : 'border-indigo-200 focus:ring-indigo-500'
+                                }`}
+                            />
+                            {settings.streamElementsToken && (
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 text-green-500 pointer-events-none" title="Saved">
+                                    <Check size={14} />
+                                </div>
+                            )}
+                        </div>
                         <a href="https://streamelements.com/dashboard/account/channels" target="_blank" rel="noreferrer" className="text-[10px] text-indigo-400 hover:underline mt-1 inline-block">
                             Find in Dashboard &gt; Account &gt; Channels
                         </a>
                     </div>
 
                     <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                            <Zap size={12} className="text-green-500" /> LivePix Key / Widget URL
+                        <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center justify-between">
+                             <span className="flex items-center gap-1"><Zap size={12} className="text-green-500" /> LivePix Key / URL</span>
                         </label>
-                        <input 
-                            type={showSecrets ? "text" : "password"}
-                            value={settings.livePixKey || ''}
-                            onChange={(e) => handleChange('livePixKey', e.target.value)}
-                            placeholder="Paste LivePix Widget URL or Key..."
-                            className="w-full p-2 bg-white border border-indigo-200 rounded-md text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
-                        />
+                        <div className="relative">
+                            <input 
+                                type={showSecrets ? "text" : "password"}
+                                value={settings.livePixKey || ''}
+                                onChange={(e) => handleChange('livePixKey', e.target.value)}
+                                placeholder="Paste LivePix Widget URL or Key..."
+                                className="w-full p-2 pr-8 bg-white border border-indigo-200 rounded-md text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                            />
+                            {settings.livePixKey && (
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 text-green-500 pointer-events-none" title="Saved">
+                                    <Check size={14} />
+                                </div>
+                            )}
+                        </div>
                         <p className="text-[10px] text-gray-400 mt-1">
-                            Used to listen for real-time Pix donations.
+                            Paste your LivePix Widget URL to enable instant Pix alerts.
                         </p>
                     </div>
                 </div>
