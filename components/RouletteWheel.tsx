@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { ThemeMode } from '../types';
 import { Trophy, X } from 'lucide-react';
@@ -39,8 +38,6 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({ theme, events, onC
             const extraSpins = 360 * 8;
             const targetAngle = extraSpins + (randomSegment * segmentAngle) + (segmentAngle / 2);
             
-            // CSS Transform rotates clockwise, so index 0 is at 3 o'clock usually. 
-            // We need to adjust calculation or just let the visual spin match the logic.
             // Simplified: Just visually spin to a random degree.
             const randomRotation = 2000 + Math.random() * 2000; 
             
@@ -48,9 +45,6 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({ theme, events, onC
 
             // Determine winner based on final rotation
             setTimeout(() => {
-                // Normalize rotation to 0-360
-                const finalDegree = randomRotation % 360;
-                // This calculation depends heavily on the starting position of the wheel (0deg) and the pointer location (Top/Bottom)
                 // For visual simplicity in this demo, we just pick a random winner from the list to display text
                 const winningEvent = events[Math.floor(Math.random() * events.length)];
                 
@@ -64,22 +58,58 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({ theme, events, onC
         return () => clearTimeout(timer);
     }, [events]);
 
+    // Auto-close effect
+    useEffect(() => {
+        let autoCloseTimer: ReturnType<typeof setTimeout>;
+
+        if (winner) {
+            // Set a timer to close automatically after 15 seconds
+            autoCloseTimer = setTimeout(() => {
+                onComplete();
+            }, 15000);
+        }
+
+        // Cleanup timer if component unmounts or user closes manually
+        return () => {
+            if (autoCloseTimer) clearTimeout(autoCloseTimer);
+        };
+    }, [winner, onComplete]);
+
     return (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-3xl animate-fade-in">
             
             {winner ? (
                 // Winner Display
-                <div className="text-center animate-bounce p-4 bg-white rounded-xl border-4 border-yellow-400 shadow-2xl transform scale-110">
+                <div className="text-center animate-bounce p-4 bg-white rounded-xl border-4 border-yellow-400 shadow-2xl transform scale-110 relative w-64">
                     <Trophy className="w-12 h-12 mx-auto text-yellow-500 mb-2" />
                     <h3 className="text-xs font-bold uppercase text-gray-400">Event Unlocked!</h3>
-                    <div className={`text-xl font-black ${theme === ThemeMode.NEON ? 'text-fuchsia-600' : 'text-indigo-600'}`}>
+                    <div className={`text-xl font-black my-2 break-words ${theme === ThemeMode.NEON ? 'text-fuchsia-600' : 'text-indigo-600'}`}>
                         {winner}
                     </div>
+                    
+                    {/* Visual Countdown Timer */}
+                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-3 mb-3">
+                        <div 
+                            className="bg-yellow-400 h-full origin-left" 
+                            style={{ 
+                                animation: 'width-shrink 15s linear forwards',
+                                width: '100%'
+                            }}
+                        >
+                            <style>{`
+                                @keyframes width-shrink {
+                                    from { width: 100%; }
+                                    to { width: 0%; }
+                                }
+                            `}</style>
+                        </div>
+                    </div>
+
                     <button 
                         onClick={onComplete}
-                        className="mt-4 px-4 py-1 bg-gray-200 hover:bg-gray-300 rounded-full text-xs font-bold text-gray-700"
+                        className="px-6 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-bold text-gray-600 transition-colors"
                     >
-                        Close
+                        Close Now
                     </button>
                 </div>
             ) : (
