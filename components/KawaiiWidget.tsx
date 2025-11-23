@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { WidgetSettings, ThemeMode, Donation, MascotType, WidgetStyle, MascotReaction, CompactTitleAlign } from '../types';
-import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift, Glasses, Flame, Timer } from 'lucide-react';
+import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift, Glasses, Flame, Timer, Music, Cloud, Triangle } from 'lucide-react';
 import { RouletteWheel } from './RouletteWheel';
 
 // --- Sub-components ---
@@ -161,17 +161,25 @@ const ProgressBar: React.FC<{ percent: number, settings: WidgetSettings, compact
     let containerClass = "";
 
     if (theme === ThemeMode.KAWAII) {
-        containerClass = "bg-white/50 border-2 border-pink-200 h-8 rounded-full shadow-inner";
+        containerClass = "bg-white/70 border-2 border-pink-200 h-9 rounded-full shadow-inner p-1";
         if (compact) containerClass = "bg-pink-100/80 border-2 border-pink-400 h-6 rounded-full shadow-md";
+        // Added animate-move-stripes for standard mode
         barClass = "h-full rounded-full bg-gradient-to-r from-pink-300 to-pink-500 relative overflow-hidden";
+        if (!compact && !useCustomBarColor) barClass += " animate-move-stripes";
     } else if (theme === ThemeMode.MARIO) {
         containerClass = "bg-black/80 border-4 border-white h-8 rounded-md shadow-[4px_4px_0px_rgba(0,0,0,0.2)]";
         if (compact) containerClass = "bg-black/80 border-2 border-white h-6 rounded-sm shadow-md";
-        barClass = "h-full bg-gradient-to-r from-green-400 to-green-600 border-r-4 border-white/50";
+        // Gradient stripes for Mario (green blocks)
+        barClass = "h-full bg-gradient-to-r from-green-500 to-green-600 border-r-4 border-white/50 relative overflow-hidden";
+         if (!compact && !useCustomBarColor) {
+             // Custom stripe logic via style in main render or just generic
+             barClass += " animate-move-stripes"; 
+         }
     } else { // Neon
         containerClass = "bg-gray-900 border border-cyan-500/50 h-6 skew-x-[-10deg]";
         if (compact) containerClass = "bg-gray-900/90 border border-fuchsia-500 h-5 skew-x-[-10deg] shadow-[0_0_10px_#f0f]";
-        barClass = "h-full bg-cyan-500 shadow-[0_0_15px_#0ff]";
+        barClass = "h-full bg-cyan-500 shadow-[0_0_15px_#0ff] relative overflow-hidden";
+        if (!compact && !useCustomBarColor) barClass += " animate-pulse";
     }
 
     const barStyle = {
@@ -179,7 +187,7 @@ const ProgressBar: React.FC<{ percent: number, settings: WidgetSettings, compact
         backgroundColor: useCustomBarColor ? customBarColor : undefined,
     };
     
-    // If using custom color, remove gradient classes
+    // If using custom color, remove gradient classes but keep animation if available
     if(useCustomBarColor) {
         barClass = barClass.replace(/bg-gradient-to-r from-[\w-]+ to-[\w-]+/g, '');
     }
@@ -192,6 +200,10 @@ const ProgressBar: React.FC<{ percent: number, settings: WidgetSettings, compact
             >
                 {/* Shine effect (only if not custom color) */}
                 {!useCustomBarColor && <div className="absolute top-0 left-0 w-full h-1/2 bg-white/30"></div>}
+                {/* Mario Block Pattern Overlay */}
+                {theme === ThemeMode.MARIO && !compact && !useCustomBarColor && (
+                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-30"></div>
+                )}
             </div>
             
             {/* Mascot in Compact Mode - MOVES INSIDE BAR */}
@@ -208,7 +220,7 @@ const ProgressBar: React.FC<{ percent: number, settings: WidgetSettings, compact
                             type={settings.mascot} 
                             theme={theme} 
                             isCelebrating={false} 
-                            isReacting={false}
+                            isReacting={false} 
                             reactionType={settings.reactionType}
                             scale={settings.mascotScale * 0.45} // Reduced scale for bar
                             customClass="origin-center" // No fixed size to prevent stretching
@@ -220,7 +232,7 @@ const ProgressBar: React.FC<{ percent: number, settings: WidgetSettings, compact
 
             {/* Percentage Text Overlay - Only for Standard Mode */}
             {!compact && (
-                <div className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${theme === ThemeMode.NEON ? 'text-cyan-100 skew-x-[10deg]' : 'text-gray-700 drop-shadow-md'}`}>
+                <div className={`absolute inset-0 flex items-center justify-center text-xs font-bold z-10 ${theme === ThemeMode.NEON ? 'text-cyan-900 skew-x-[10deg]' : 'text-gray-700 drop-shadow-md'}`}>
                     {percent.toFixed(1)}%
                 </div>
             )}
@@ -518,7 +530,8 @@ export const KawaiiWidget: React.FC<{
     const percent = Math.min(100, (currentAmount / goalAmount) * 100);
 
     // Dynamic Classes based on Theme
-    const getContainerClass = () => {
+    // NOTICE: removed overflow-hidden to allow mascot to stick out
+    const getContainerClassWithoutOverflow = () => {
         if (style === WidgetStyle.COMPACT) {
              return "relative w-[400px] flex flex-col gap-1";
         }
@@ -529,7 +542,7 @@ export const KawaiiWidget: React.FC<{
             case ThemeMode.NEON:
                 return "relative bg-black/90 border border-fuchsia-500 p-6 rounded-none shadow-[0_0_20px_rgba(255,0,255,0.3)] clip-path-cyberpunk";
             default: // KAWAII
-                return "relative bg-white/95 backdrop-blur-md border-4 border-pink-200 p-6 rounded-[2rem] shadow-xl";
+                return "relative bg-white/95 backdrop-blur-md border-[6px] border-pink-200 p-6 rounded-[2.5rem] shadow-xl";
         }
     };
 
@@ -538,7 +551,7 @@ export const KawaiiWidget: React.FC<{
         switch(theme) {
             case ThemeMode.MARIO: return "font-press-start text-white text-shadow-retro text-sm mb-2 text-center tracking-widest";
             case ThemeMode.NEON: return "font-vt323 text-3xl text-cyan-400 text-shadow-neon mb-1 text-center uppercase tracking-widest";
-            default: return "font-fredoka text-xl text-gray-600 font-bold mb-1 text-center uppercase tracking-wider";
+            default: return "relative z-10 font-fredoka text-2xl text-pink-500 font-bold mb-2 text-center uppercase tracking-wider drop-shadow-sm stroke-white";
         }
     };
 
@@ -546,14 +559,14 @@ export const KawaiiWidget: React.FC<{
          switch(theme) {
             case ThemeMode.MARIO: return "font-press-start text-xs text-yellow-200 mt-1 block text-right";
             case ThemeMode.NEON: return "font-vt323 text-xl text-fuchsia-400 mt-1 block text-right";
-            default: return "font-mochiy text-sm text-pink-500 mt-1 block text-right";
+            default: return "relative z-10 font-mochiy text-sm text-pink-400 mt-1 block text-right";
         }
     };
 
     return (
         <div className={`relative ${isShaking ? 'animate-shake' : ''} transition-all duration-300`}>
             
-            {/* Celebration Overlays - Now Absolute to container to prevent breaking out of preview scale */}
+            {/* Celebration Overlays */}
             {isCelebration && <GrandCelebration theme={theme} title={title} currency={currency} amount={goalAmount} />}
             {isCelebration && <div className="absolute inset-0 pointer-events-none z-50 overflow-visible"><div className="firework"></div></div>}
             
@@ -568,15 +581,80 @@ export const KawaiiWidget: React.FC<{
                 </div>
             )}
 
-            <div className={getContainerClass()}>
+            <div className={getContainerClassWithoutOverflow()}>
                 
                 {/* Standard Mode Content */}
                 {style === WidgetStyle.STANDARD && (
                     <>
-                        {/* Inner Border for Mario */}
-                        {theme === ThemeMode.MARIO && <div className="absolute inset-1 border-2 border-[#f8d878] pointer-events-none rounded-lg"></div>}
-                        
-                        {/* Floating Mascot */}
+                        {/* THEME SPECIFIC BACKGROUNDS & DECORATIONS - INSIDE CLIPPED LAYER */}
+                        {/* We use an absolute div with overflow-hidden to clip backgrounds but keep mascot visible outside */}
+                        <div className={`absolute inset-0 overflow-hidden pointer-events-none z-0 ${theme === ThemeMode.KAWAII ? 'rounded-[2rem]' : theme === ThemeMode.MARIO ? 'rounded-lg' : ''}`}>
+                             
+                             {/* KAWAII THEME */}
+                             {theme === ThemeMode.KAWAII && (
+                                <>
+                                    <div className="absolute inset-2 border-2 border-dashed border-pink-200 rounded-[2rem]"></div>
+                                    <div 
+                                        className="absolute inset-0 opacity-20 animate-bg-scroll"
+                                        style={{
+                                            backgroundImage: 'radial-gradient(#FFB7C5 20%, transparent 20%)',
+                                            backgroundSize: '20px 20px'
+                                        }}
+                                    ></div>
+                                    <div className="absolute top-3 left-3 text-yellow-300 animate-spin-slow"><Star size={20} fill="currentColor" /></div>
+                                    <div className="absolute bottom-3 right-3 text-pink-300 animate-spin-slow-reverse"><Heart size={18} fill="currentColor" /></div>
+                                    <div className="absolute top-1/2 right-2 text-blue-200 animate-pulse"><Cloud size={24} fill="currentColor" /></div>
+                                    <div className="absolute top-2 right-12 text-purple-200 opacity-60"><Sparkles size={16} /></div>
+                                </>
+                             )}
+
+                             {/* MARIO THEME */}
+                             {theme === ThemeMode.MARIO && (
+                                <>
+                                   {/* Inner Border */}
+                                   <div className="absolute inset-1 border-2 border-[#f8d878] rounded-lg"></div>
+                                   {/* Pixel Brick/Checkered Pattern */}
+                                   <div 
+                                       className="absolute inset-0 opacity-10 animate-bg-scroll"
+                                       style={{
+                                           backgroundImage: 'linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000)',
+                                           backgroundPosition: '0 0, 10px 10px',
+                                           backgroundSize: '20px 20px'
+                                       }}
+                                   ></div>
+                                   
+                                   {/* Floating Coins/Clouds */}
+                                   <div className="absolute top-2 right-4 text-yellow-300 animate-bounce opacity-90">
+                                       <div className="w-5 h-5 rounded-full border-2 border-yellow-500 bg-yellow-300 shadow-sm flex items-center justify-center text-[8px] font-bold text-yellow-600">$</div>
+                                   </div>
+                                   <div className="absolute bottom-6 left-2 text-white/40 animate-float"><Cloud size={28} fill="white" /></div>
+                                </>
+                             )}
+
+                             {/* NEON THEME */}
+                             {theme === ThemeMode.NEON && (
+                                <>
+                                   {/* Moving Grid Background */}
+                                   <div 
+                                       className="absolute inset-0 opacity-20 animate-grid-scroll"
+                                       style={{
+                                           backgroundImage: 'linear-gradient(rgba(0, 255, 255, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 255, 0.4) 1px, transparent 1px)',
+                                           backgroundSize: '30px 30px'
+                                       }}
+                                   ></div>
+                                   
+                                   {/* Glitch/Tech Decorations */}
+                                   <div className="absolute top-3 right-3 text-cyan-400 animate-pulse"><Zap size={20} fill="currentColor" /></div>
+                                   <div className="absolute bottom-4 left-4 text-fuchsia-500 animate-spin-slow opacity-60"><Triangle size={16} fill="none" /></div>
+                                   <div className="absolute top-1/2 left-2 text-cyan-300/50 font-vt323 text-xs rotate-90">SYS.OK</div>
+                                   
+                                   {/* Scanline */}
+                                   <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/20 to-transparent h-[15%] w-full animate-scan pointer-events-none"></div>
+                                </>
+                             )}
+                        </div>
+
+                        {/* Floating Mascot - OUTSIDE OF OVERFLOW HIDDEN */}
                         <Mascot 
                             type={mascot} 
                             theme={theme} 
@@ -605,7 +683,7 @@ export const KawaiiWidget: React.FC<{
 
                         {/* Recent Donation (Simple Ticker) */}
                         {settings.showRecentDonations && donations.length > 0 && (
-                            <div className="mt-4 pt-3 border-t border-gray-100/20">
+                            <div className="mt-4 pt-3 border-t border-white/20 relative z-10">
                                 <div className="flex items-center gap-2 overflow-hidden">
                                     <Heart size={14} className={`${theme === ThemeMode.NEON ? 'text-fuchsia-500' : 'text-pink-400'} animate-pulse`} fill="currentColor" />
                                     <div className="text-xs font-bold text-gray-500 whitespace-nowrap animate-marquee">
