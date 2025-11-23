@@ -153,7 +153,13 @@ const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: st
     );
 };
 
-const ProgressBar: React.FC<{ percent: number, settings: WidgetSettings, compact?: boolean }> = ({ percent, settings, compact }) => {
+const ProgressBar: React.FC<{ 
+    percent: number, 
+    settings: WidgetSettings, 
+    compact?: boolean,
+    isShaking?: boolean,
+    isCelebration?: boolean
+}> = ({ percent, settings, compact, isShaking, isCelebration }) => {
     const clampedPercent = Math.min(100, Math.max(0, percent));
     const { theme, useCustomBarColor, customBarColor } = settings;
     
@@ -219,8 +225,8 @@ const ProgressBar: React.FC<{ percent: number, settings: WidgetSettings, compact
                          <Mascot 
                             type={settings.mascot} 
                             theme={theme} 
-                            isCelebrating={false} 
-                            isReacting={false} 
+                            isCelebrating={!!isCelebration} // Pass real celebration state
+                            isReacting={!!isShaking}        // Pass real reaction state
                             reactionType={settings.reactionType}
                             scale={settings.mascotScale * 0.45} // Reduced scale for bar
                             customClass="origin-center" // No fixed size to prevent stretching
@@ -734,7 +740,13 @@ export const KawaiiWidget: React.FC<{
                         </div>
                         
                         {/* Bar */}
-                        <ProgressBar percent={percent} settings={settings} compact />
+                        <ProgressBar 
+                            percent={percent} 
+                            settings={settings} 
+                            compact 
+                            isShaking={isShaking} 
+                            isCelebration={isCelebration}
+                        />
                         
                         {/* Footer Info: Timer only */}
                         <div className={`flex w-full mt-1 px-1 ${settings.compactTitleAlign === CompactTitleAlign.RIGHT ? 'justify-end' : 'justify-start'}`}>
