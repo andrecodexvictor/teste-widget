@@ -46,6 +46,11 @@ export enum GoalMode {
   SUBGOALS = 'subgoals', // "Escadinha"
 }
 
+export enum CompactTitleAlign {
+    LEFT = 'left',
+    RIGHT = 'right',
+}
+
 export interface Donation {
   id: string;
   username: string;
@@ -63,6 +68,8 @@ export interface WidgetSettings {
   goalAmount: number;
   currentAmount: number;
   subGoalInterval: number; // e.g., Every 100 triggers an event
+  goalStartDate: string;
+  goalEndDate: string;
   
   // Visuals
   currency: string;
@@ -77,6 +84,9 @@ export interface WidgetSettings {
   mascotScale: number; // Mascot specific scale
   position: WidgetPosition;
   reactionType: MascotReaction; // Type of face on donation
+  useCustomBarColor: boolean;
+  customBarColor: string;
+  compactTitleAlign: CompactTitleAlign;
 
   // Roulette / Events
   enableRoulette: boolean;
@@ -94,6 +104,8 @@ export const DEFAULT_SETTINGS: WidgetSettings = {
   goalAmount: 500,
   currentAmount: 120,
   subGoalInterval: 100,
+  goalStartDate: '',
+  goalEndDate: '',
   currency: 'R$',
   title: 'Monthly Goal',
   mascot: MascotType.CAT_GAMER,
@@ -106,6 +118,9 @@ export const DEFAULT_SETTINGS: WidgetSettings = {
   mascotScale: 1,
   position: WidgetPosition.CENTER_BOTTOM,
   reactionType: MascotReaction.HAPPY,
+  useCustomBarColor: false,
+  customBarColor: '#4ade80',
+  compactTitleAlign: CompactTitleAlign.LEFT,
   
   enableRoulette: true,
   rouletteEvents: [

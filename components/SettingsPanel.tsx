@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle, MascotReaction } from '../types';
-import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap, Check, Wifi, WifiOff } from 'lucide-react';
+import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle, MascotReaction, CompactTitleAlign } from '../types';
+import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap, Check, Wifi, WifiOff, Timer, AlignLeft, AlignRight } from 'lucide-react';
 
 interface SettingsPanelProps {
     settings: WidgetSettings;
@@ -140,6 +140,25 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                         </button>
                     ))}
                 </div>
+                 <div>
+                    <div className="flex items-center gap-2 mt-2">
+                         <input
+                            type="checkbox"
+                            id="useCustomBarColor"
+                            checked={settings.useCustomBarColor}
+                            onChange={(e) => handleChange('useCustomBarColor', e.target.checked)}
+                            className="w-4 h-4 text-indigo-600 rounded"
+                        />
+                        <label htmlFor="useCustomBarColor" className="text-xs text-gray-700 font-semibold">Use Custom Bar Color</label>
+                        <input
+                            type="color"
+                            value={settings.customBarColor}
+                            onChange={(e) => handleChange('customBarColor', e.target.value)}
+                            className={`w-8 h-8 rounded-full border-2 border-white shadow-sm cursor-pointer ${!settings.useCustomBarColor ? 'opacity-50 pointer-events-none' : ''}`}
+                            disabled={!settings.useCustomBarColor}
+                        />
+                    </div>
+                </div>
             </section>
 
             {/* Goal Configuration */}
@@ -212,6 +231,33 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                     />
                 </div>
             </section>
+            
+             {/* Goal Timer */}
+            <section className="space-y-3">
+                <h3 className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
+                    <Timer size={14} /> Goal Timer
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">Start Date</label>
+                        <input 
+                            type="datetime-local" 
+                            value={settings.goalStartDate}
+                            onChange={(e) => handleChange('goalStartDate', e.target.value)}
+                            className="w-full p-2 bg-black text-white border border-gray-700 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">End Date</label>
+                        <input 
+                            type="datetime-local" 
+                            value={settings.goalEndDate}
+                            onChange={(e) => handleChange('goalEndDate', e.target.value)}
+                            className="w-full p-2 bg-black text-white border border-gray-700 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                    </div>
+                </div>
+            </section>
 
             {/* Roulette / Event Settings */}
             <section className="space-y-3">
@@ -247,7 +293,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
             {/* Mascot & Layout */}
             <section className="space-y-3">
                 <h3 className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
-                    <Smile size={14} /> Mascot Customization
+                    <Smile size={14} /> Mascot & Layout
                 </h3>
                 
                 <div className="space-y-2">
@@ -298,6 +344,20 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                          <option value={WidgetPosition.BOTTOM_RIGHT}>Bottom Right</option>
                          <option value={WidgetPosition.CENTER_BOTTOM}>Center Bottom</option>
                      </select>
+                </div>
+                 
+                 <div className="space-y-2">
+                    <label className="block text-xs text-gray-500">Compact Title Position</label>
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                        <button 
+                            onClick={() => handleChange('compactTitleAlign', CompactTitleAlign.LEFT)}
+                            className={`flex-1 text-xs py-1.5 rounded-md font-semibold transition flex items-center justify-center gap-1 ${settings.compactTitleAlign === CompactTitleAlign.LEFT ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
+                        ><AlignLeft size={14} /> Left</button>
+                        <button 
+                            onClick={() => handleChange('compactTitleAlign', CompactTitleAlign.RIGHT)}
+                            className={`flex-1 text-xs py-1.5 rounded-md font-semibold transition flex items-center justify-center gap-1 ${settings.compactTitleAlign === CompactTitleAlign.RIGHT ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
+                        ><AlignRight size={14} /> Right</button>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

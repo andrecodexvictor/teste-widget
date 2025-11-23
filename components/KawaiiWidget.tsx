@@ -1,10 +1,67 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { WidgetSettings, ThemeMode, Donation, MascotType, WidgetStyle, MascotReaction } from '../types';
-import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift, Glasses, Flame } from 'lucide-react';
+import { WidgetSettings, ThemeMode, Donation, MascotType, WidgetStyle, MascotReaction, CompactTitleAlign } from '../types';
+import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift, Glasses, Flame, Timer } from 'lucide-react';
 import { RouletteWheel } from './RouletteWheel';
 
 // --- Sub-components ---
+
+const GoalTimer: React.FC<{ startDateStr: string, endDateStr: string, textClass: string }> = ({ startDateStr, endDateStr, textClass }) => {
+    const [timeLeft, setTimeLeft] = useState('');
+
+    useEffect(() => {
+        if (!endDateStr) {
+            setTimeLeft('');
+            return;
+        }
+
+        const interval = setInterval(() => {
+            const now = new Date().getTime();
+            const startDate = startDateStr ? new Date(startDateStr).getTime() : 0;
+            const endDate = new Date(endDateStr).getTime();
+            
+            if (now < startDate) {
+                const distance = startDate - now;
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                setTimeLeft(`Starts in ${days}d ${hours}h`);
+                return;
+            }
+
+            const distance = endDate - now;
+
+            if (distance < 0) {
+                setTimeLeft('Goal Ended!');
+                clearInterval(interval);
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            let timerString = '';
+            if (days > 0) timerString += `${days}d `;
+            if (hours > 0 || days > 0) timerString += `${hours}h `;
+            timerString += `${minutes}m ${seconds}s`;
+
+            setTimeLeft(timerString.trim());
+        }, 1000);
+
+        return () => clearInterval(interval);
+
+    }, [startDateStr, endDateStr]);
+
+    if (!timeLeft) return null;
+
+    return (
+        <div className={`flex items-center gap-1 text-xs mt-1 ${textClass} opacity-80`}>
+            <Timer size={12} />
+            <span>{timeLeft}</span>
+        </div>
+    );
+};
 
 const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: string, amount: number }> = ({ theme, title, currency, amount }) => {
     
@@ -164,8 +221,9 @@ const Confetti: React.FC = () => {
     )
 }
 
-const ProgressBar: React.FC<{ percent: number, theme: ThemeMode, primaryColor: string, compact?: boolean }> = ({ percent, theme, primaryColor, compact }) => {
+const ProgressBar: React.FC<{ percent: number, settings: WidgetSettings, compact?: boolean }> = ({ percent, settings, compact }) => {
     const clampedPercent = Math.min(100, Math.max(0, percent));
+    const { theme, useCustomBarColor, customBarColor } = settings;
     
     let barClass = "";
     let containerClass = "";
@@ -178,21 +236,30 @@ const ProgressBar: React.FC<{ percent: number, theme: ThemeMode, primaryColor: s
         containerClass = "bg-black/80 border-4 border-white h-8 rounded-md shadow-[4px_4px_0px_rgba(0,0,0,0.2)]";
         if (compact) containerClass = "bg-black/80 border-2 border-white h-6 rounded-sm shadow-md";
         barClass = "h-full bg-gradient-to-r from-green-400 to-green-600 border-r-4 border-white/50";
-    } else {
-        // Neon
+    } else { // Neon
         containerClass = "bg-gray-900 border border-cyan-500/50 h-6 skew-x-[-10deg]";
         if (compact) containerClass = "bg-gray-900/90 border border-fuchsia-500 h-5 skew-x-[-10deg] shadow-[0_0_10px_#f0f]";
         barClass = "h-full bg-cyan-500 shadow-[0_0_15px_#0ff]";
+    }
+
+    const barStyle = {
+        width: `${clampedPercent}%`,
+        backgroundColor: useCustomBarColor ? customBarColor : undefined,
+    };
+    
+    // If using custom color, remove gradient classes
+    if(useCustomBarColor) {
+        barClass = barClass.replace(/bg-gradient-to-r from-[\w-]+ to-[\w-]+/g, '');
     }
 
     return (
         <div className={`w-full relative ${containerClass} ${compact ? 'mt-0' : 'mt-2'}`}>
              <div 
                 className={`transition-all duration-1000 ease-out ${barClass}`}
-                style={{ width: `${clampedPercent}%` }}
+                style={barStyle}
             >
-                {/* Shine effect */}
-                <div className="absolute top-0 left-0 w-full h-1/2 bg-white/30"></div>
+                {/* Shine effect (only if not custom color) */}
+                {!useCustomBarColor && <div className="absolute top-0 left-0 w-full h-1/2 bg-white/30"></div>}
             </div>
             {/* Percentage Text Overlay - Only for Standard Mode */}
             {!compact && (
@@ -560,6 +627,8 @@ export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations,
 
     // --- RENDER: COMPACT MODE ---
     if (settings.style === WidgetStyle.COMPACT) {
+        const titleAlignClass = settings.compactTitleAlign === CompactTitleAlign.RIGHT ? 'flex-row-reverse' : '';
+
         return (
             <>
             {/* Full Screen Celebration Overlay */}
@@ -582,38 +651,35 @@ export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations,
 
                 <div className="flex flex-col gap-1">
                     {/* Header Info (Text needs outline/shadow because bg is transparent) */}
-                    <div className="flex justify-between items-end px-1">
-                        <h2 className={`text-sm uppercase font-bold ${styles.textCompactOutline} drop-shadow-md`}>{settings.title}</h2>
+                    <div className={`flex justify-between items-end px-1 ${titleAlignClass}`}>
+                        <div className="flex flex-col items-start">
+                           <h2 className={`text-sm uppercase font-bold ${styles.textCompactOutline} drop-shadow-md`}>{settings.title}</h2>
+                           <GoalTimer startDateStr={settings.goalStartDate} endDateStr={settings.goalEndDate} textClass={styles.textCompactOutline} />
+                        </div>
                         <div className={`text-xl font-black ${styles.textCompactOutline} drop-shadow-md`}>
                             {settings.currency}{settings.currentAmount}
                             <span className="text-xs opacity-90 ml-1">/ {settings.goalAmount}</span>
                         </div>
                     </div>
 
-                    {/* Walking Mascot Container */}
-                    <div className="relative w-full mt-8 mb-2">
+                    {/* Bar with Mascot INSIDE */}
+                    <div className="relative w-full mt-2">
+                         <ProgressBar percent={percentage} settings={settings} compact={true} />
                          {/* The Mascot moves with left: percentage% */}
                          <div 
-                            className="absolute bottom-full mb-1 transition-all duration-1000 ease-linear z-20"
-                            style={{ left: `${percentage}%`, transform: 'translateX(-50%)' }}
+                            className="absolute top-1/2 -translate-y-1/2 transition-all duration-1000 ease-linear z-20"
+                            style={{ left: `${percentage}%`, transform: `translateX(-50%) translateY(-50%)` }}
                          >
-                             {/* Using a smaller custom class for the mascot in compact mode, but scaling applies */}
                              <Mascot 
                                 type={settings.mascot} 
                                 theme={settings.theme} 
                                 isCelebrating={isCelebration} 
                                 isReacting={isShaking || isCelebration}
                                 reactionType={settings.reactionType}
-                                customClass="w-12 h-12 animate-bounce" // Always bounce to simulate walking/floating
+                                customClass="w-5 h-5" // Smaller class to fit inside
                                 scale={settings.mascotScale}
                             />
-                             {/* Speech bubble for percentage */}
-                             <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow border border-gray-200 whitespace-nowrap">
-                                 {percentage.toFixed(0)}%
-                             </div>
                          </div>
-
-                         <ProgressBar percent={percentage} theme={settings.theme} primaryColor={settings.primaryColor} compact={true} />
                     </div>
                 </div>
             </div>
@@ -670,10 +736,13 @@ export const KawaiiWidget: React.FC<KawaiiWidgetProps> = ({ settings, donations,
                     </div>
                 </div>
             </div>
+            
+            {/* Timer for Standard Mode */}
+            <GoalTimer startDateStr={settings.goalStartDate} endDateStr={settings.goalEndDate} textClass={styles.textSecondary} />
 
             {/* Bar */}
             <div className="relative z-10 mt-1">
-                <ProgressBar percent={percentage} theme={settings.theme} primaryColor={settings.primaryColor} />
+                <ProgressBar percent={percentage} settings={settings} />
             </div>
 
             {/* Footer / Top Donor */}
