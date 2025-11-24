@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { WidgetSettings, ThemeMode, Donation, MascotType, WidgetStyle, MascotReaction, CompactTitleAlign } from '../types';
 import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift, Glasses, Flame, Timer, Music, Cloud, Triangle } from 'lucide-react';
@@ -579,9 +577,9 @@ export const KawaiiWidget: React.FC<{
             {isCelebration && <GrandCelebration theme={theme} title={title} currency={currency} amount={goalAmount} />}
             {isCelebration && <div className="absolute inset-0 pointer-events-none z-50 overflow-visible"><div className="firework"></div></div>}
             
-            {/* Roulette Wheel Overlay */}
+            {/* Roulette Wheel Overlay - Centered absolutely to ignore parent bounds in Compact mode */}
             {showRoulette && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50">
                     <RouletteWheel 
                         theme={theme} 
                         events={settings.rouletteEvents} 

@@ -76,7 +76,7 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({ theme, events, onC
     }, [winner, onComplete]);
 
     return (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-3xl animate-fade-in">
+        <div className="relative flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-3xl animate-fade-in p-6 shadow-[0_0_40px_rgba(0,0,0,0.5)] border-4 border-white/10">
             
             {winner ? (
                 // Winner Display
