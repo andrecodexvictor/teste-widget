@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { WidgetSettings, ThemeMode, Donation, MascotType, WidgetStyle, MascotReaction, CompactTitleAlign, TrailReward } from '../types';
-import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift, Glasses, Flame, Timer, Music, Cloud, Triangle, Trophy } from 'lucide-react';
+import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift, Glasses, Flame, Timer, Music, Cloud, Triangle, Trophy, Lock } from 'lucide-react';
 import { RouletteWheel } from './RouletteWheel';
 
 // --- Sub-components ---
@@ -601,11 +601,16 @@ export const KawaiiWidget: React.FC<{
 
     const percent = Math.min(100, (currentAmount / goalAmount) * 100);
 
+    // Calculate the nearest NEXT reward that hasn't been reached yet
+    const nextTrailReward = useMemo(() => {
+        if (!settings.trailRewards || settings.trailRewards.length === 0) return null;
+        const sorted = [...settings.trailRewards].sort((a, b) => a.amount - b.amount);
+        return sorted.find(r => r.amount > currentAmount);
+    }, [settings.trailRewards, currentAmount]);
+
     // Dynamic Classes based on Theme
-    // NOTICE: removed overflow-hidden to allow mascot to stick out
     const getContainerClassWithoutOverflow = () => {
         if (style === WidgetStyle.COMPACT) {
-             // Removed hardcoded w-[400px]
              return "relative flex flex-col gap-1";
         }
 
@@ -668,7 +673,6 @@ export const KawaiiWidget: React.FC<{
                 {style === WidgetStyle.STANDARD && (
                     <>
                         {/* THEME SPECIFIC BACKGROUNDS & DECORATIONS - INSIDE CLIPPED LAYER */}
-                        {/* We use an absolute div with overflow-hidden to clip backgrounds but keep mascot visible outside */}
                         <div className={`absolute inset-0 overflow-hidden pointer-events-none z-0 ${theme === ThemeMode.KAWAII ? 'rounded-[2rem]' : theme === ThemeMode.MARIO ? 'rounded-lg' : ''}`}>
                              
                              {/* KAWAII THEME */}
@@ -735,7 +739,7 @@ export const KawaiiWidget: React.FC<{
                              )}
                         </div>
 
-                        {/* Floating Mascot - OUTSIDE OF OVERFLOW HIDDEN */}
+                        {/* Floating Mascot */}
                         <Mascot 
                             type={mascot} 
                             theme={theme} 
@@ -754,8 +758,21 @@ export const KawaiiWidget: React.FC<{
                         <div className="relative z-10">
                             <ProgressBar percent={percent} settings={settings} />
                             
-                            <div className="flex justify-between items-end mt-2">
-                                <GoalTimer startDateStr={settings.goalStartDate} endDateStr={settings.goalEndDate} textClass={getValueClass()} />
+                            <div className="flex justify-between items-start mt-2">
+                                <div className="flex flex-col">
+                                    <GoalTimer startDateStr={settings.goalStartDate} endDateStr={settings.goalEndDate} textClass={getValueClass()} />
+                                    {/* NEXT TRAIL GOAL INDICATOR */}
+                                    {nextTrailReward && (
+                                        <div className={`text-[10px] font-bold mt-1 flex items-center gap-1 ${
+                                            theme === ThemeMode.NEON ? 'text-yellow-300 animate-pulse' :
+                                            theme === ThemeMode.MARIO ? 'text-blue-500 uppercase' :
+                                            'text-indigo-400 bg-white/50 px-1.5 py-0.5 rounded-full'
+                                        }`}>
+                                            <Lock size={10} />
+                                            <span>Next: {nextTrailReward.label} ({currency}{nextTrailReward.amount})</span>
+                                        </div>
+                                    )}
+                                </div>
                                 <span className={getValueClass()}>
                                     {currency}{currentAmount} <span className="text-[0.8em] opacity-70">/ {currency}{goalAmount}</span>
                                 </span>
@@ -823,9 +840,27 @@ export const KawaiiWidget: React.FC<{
                             isCelebration={isCelebration}
                         />
                         
-                        {/* Footer Info: Timer only */}
-                        <div className={`flex w-full mt-1 px-1 ${settings.compactTitleAlign === CompactTitleAlign.RIGHT ? 'justify-end' : 'justify-start'}`}>
-                            <GoalTimer startDateStr={settings.goalStartDate} endDateStr={settings.goalEndDate} textClass="font-mono text-xs text-white drop-shadow-md" />
+                        {/* Footer Info: Timer & Next Reward */}
+                        <div className={`flex w-full mt-1 px-1 items-center justify-between`}>
+                            {settings.compactTitleAlign === CompactTitleAlign.LEFT ? (
+                                <>
+                                    <GoalTimer startDateStr={settings.goalStartDate} endDateStr={settings.goalEndDate} textClass="font-mono text-xs text-white drop-shadow-md" />
+                                    {nextTrailReward && (
+                                        <div className="text-[10px] font-bold text-white drop-shadow-md flex items-center gap-1 opacity-90">
+                                            <span>Next: {nextTrailReward.label}</span>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    {nextTrailReward && (
+                                        <div className="text-[10px] font-bold text-white drop-shadow-md flex items-center gap-1 opacity-90">
+                                            <span>Next: {nextTrailReward.label}</span>
+                                        </div>
+                                    )}
+                                    <GoalTimer startDateStr={settings.goalStartDate} endDateStr={settings.goalEndDate} textClass="font-mono text-xs text-white drop-shadow-md" />
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
