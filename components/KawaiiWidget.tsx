@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
-import { WidgetSettings, ThemeMode, Donation, MascotType, WidgetStyle, MascotReaction, CompactTitleAlign } from '../types';
-import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift, Glasses, Flame, Timer, Music, Cloud, Triangle } from 'lucide-react';
+import { WidgetSettings, ThemeMode, Donation, MascotType, WidgetStyle, MascotReaction, CompactTitleAlign, TrailReward } from '../types';
+import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift, Glasses, Flame, Timer, Music, Cloud, Triangle, Trophy } from 'lucide-react';
 import { RouletteWheel } from './RouletteWheel';
 
 // --- Sub-components ---
@@ -62,7 +63,27 @@ const GoalTimer: React.FC<{ startDateStr: string, endDateStr: string, textClass:
     );
 };
 
-const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: string, amount: number }> = ({ theme, title, currency, amount }) => {
+const RewardAlert: React.FC<{ reward: TrailReward, onComplete: () => void }> = ({ reward, onComplete }) => {
+    useEffect(() => {
+        const timer = setTimeout(onComplete, 8000); // Auto close after 8s
+        return () => clearTimeout(timer);
+    }, [onComplete]);
+
+    return (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] animate-pop-in">
+            <div className="bg-white p-4 rounded-xl shadow-[0_0_30px_rgba(255,215,0,0.6)] border-4 border-yellow-400 text-center min-w-[200px] relative">
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-yellow-400 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap border-2 border-white shadow-sm">
+                    Reward Unlocked!
+                </div>
+                <div className="text-3xl mb-1">🎁</div>
+                <div className="font-black text-xl text-gray-800 leading-tight">{reward.label}</div>
+                <div className="text-xs text-yellow-600 font-bold mt-1">Goal Reached: {reward.amount}</div>
+            </div>
+        </div>
+    );
+};
+
+const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: string, amount: number, jackpotLabel: string }> = ({ theme, title, currency, amount, jackpotLabel }) => {
     
     // Helper for absolute centering to ensure it sticks to widget but overflows slightly for effect
     const absoluteCenterClass = "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] min-w-[350px] min-h-[300px] pointer-events-none flex flex-col items-center justify-center";
@@ -76,13 +97,17 @@ const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: st
                 <div className="firework absolute right-1/4 top-1/2" style={{ animationDelay: '0.5s' }}></div>
                 <div className="firework absolute left-1/2 top-1/3" style={{ animationDelay: '1s' }}></div>
 
-                <div className="relative z-10 animate-pop-in">
-                    <h1 className="text-4xl md:text-5xl text-yellow-400 drop-shadow-[4px_4px_0_#b91c1c] mb-4 whitespace-nowrap">
+                <div className="relative z-10 animate-pop-in px-4">
+                    <h1 className="text-4xl md:text-5xl text-yellow-400 drop-shadow-[4px_4px_0_#b91c1c] mb-2 whitespace-nowrap">
                         COURSE CLEAR!
                     </h1>
-                    <div className="text-xl text-white mt-4 flex items-center justify-center gap-2">
+                     <div className="bg-white/10 p-2 rounded mb-2 border-2 border-white/30">
+                        <div className="text-[10px] text-yellow-200 uppercase">Jackpot Unlocked</div>
+                        <div className="text-lg text-white">{jackpotLabel || "Goal Reached"}</div>
+                    </div>
+                    <div className="text-xl text-white mt-2 flex items-center justify-center gap-2">
                         <Star className="text-yellow-400 animate-spin" size={24} fill="currentColor" />
-                        GOAL: {currency}{amount}
+                        {currency}{amount}
                         <Star className="text-yellow-400 animate-spin" size={24} fill="currentColor" />
                     </div>
                 </div>
@@ -95,12 +120,15 @@ const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: st
             <div className={`${absoluteCenterClass} z-[100] bg-black/95 backdrop-blur-sm font-vt323 text-center border border-fuchsia-500 shadow-[0_0_50px_rgba(255,0,255,0.5)]`}>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-fuchsia-900/40 to-black"></div>
                 
-                <div className="relative z-10">
+                <div className="relative z-10 px-4">
                     <h1 className="text-6xl text-cyan-400 animate-glitch tracking-widest drop-shadow-[0_0_20px_rgba(0,255,255,0.8)] whitespace-nowrap">
                         MISSION COMPLETE
                     </h1>
-                    <div className="mt-4 text-3xl text-fuchsia-500 animate-pulse border-t-2 border-b-2 border-fuchsia-500 py-2 inline-block px-8 bg-black/50">
-                        TARGET: {currency}{amount}
+                     <div className="my-4 border border-fuchsia-500 bg-black/80 p-2">
+                        <div className="text-xl text-fuchsia-300">JACKPOT: {jackpotLabel || "TARGET ACQUIRED"}</div>
+                    </div>
+                    <div className="text-3xl text-white animate-pulse">
+                        {currency}{amount}
                     </div>
                 </div>
                 
@@ -119,16 +147,19 @@ const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: st
                 <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent_0_20deg,white_20_40deg,transparent_40_60deg,white_60_80deg,transparent_80_100deg,white_100_120deg,transparent_120_140deg,white_140_160deg,transparent_160_180deg,white_180_200deg,transparent_200_220deg,white_220_240deg,transparent_240_260deg,white_260_280deg,transparent_280_300deg,white_300_320deg,transparent_320_340deg,white_340_360deg)]"></div>
              </div>
 
-             <div className="relative z-10 animate-pop-in bg-white/90 p-8 rounded-[2rem] border-4 border-pink-300 shadow-[0_0_30px_rgba(255,192,203,0.8)] transform rotate-2">
+             <div className="relative z-10 animate-pop-in bg-white/90 p-6 rounded-[2rem] border-4 border-pink-300 shadow-[0_0_30px_rgba(255,192,203,0.8)] transform rotate-2 max-w-[90%]">
                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-6xl animate-bounce">
                      🎊
                  </div>
                  <h1 className="text-5xl text-pink-500 drop-shadow-md mb-2 mt-4">
                      SUGOI!
                  </h1>
-                 <h2 className="text-xl text-indigo-400 uppercase tracking-wide">
-                     Goal Reached!
-                 </h2>
+                 
+                 <div className="bg-pink-100 border-2 border-pink-300 rounded-xl p-2 my-2">
+                     <div className="text-[10px] text-pink-400 font-bold uppercase tracking-wider">Jackpot Unlocked</div>
+                     <div className="text-xl text-indigo-600 font-black">{jackpotLabel || "Goal Reached!"}</div>
+                 </div>
+
                  <div className="mt-2 text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500">
                      {currency}{amount}
                  </div>
@@ -161,7 +192,7 @@ const ProgressBar: React.FC<{
     isCelebration?: boolean
 }> = ({ percent, settings, compact, isShaking, isCelebration }) => {
     const clampedPercent = Math.min(100, Math.max(0, percent));
-    const { theme, useCustomBarColor, customBarColor } = settings;
+    const { theme, useCustomBarColor, customBarColor, trailRewards, goalAmount } = settings;
     
     let barClass = "";
     let containerClass = "";
@@ -212,6 +243,38 @@ const ProgressBar: React.FC<{
                 )}
             </div>
             
+            {/* TRAIL MARKERS (Intermediate Rewards) */}
+            {trailRewards.map(reward => {
+                const posPercent = (reward.amount / goalAmount) * 100;
+                if (posPercent > 100) return null; // Don't show if exceeds goal
+                
+                const isReached = percent >= posPercent;
+                
+                return (
+                    <div 
+                        key={reward.id}
+                        className="absolute top-1/2 -translate-y-1/2 z-10 transition-all duration-300"
+                        style={{ left: `${posPercent}%` }}
+                        title={`${reward.label} (${settings.currency}${reward.amount})`}
+                    >
+                        {/* The Marker Icon */}
+                        <div className={`
+                            transform -translate-x-1/2 transition-transform
+                            ${isReached ? 'scale-110' : 'scale-90 opacity-70 grayscale'}
+                            ${compact ? 'w-4 h-4' : 'w-6 h-6'}
+                        `}>
+                            {theme === ThemeMode.MARIO ? (
+                                <div className={`w-full h-full bg-yellow-400 border border-black flex items-center justify-center text-[8px] font-bold ${isReached ? 'animate-bounce' : ''}`}>?</div>
+                            ) : theme === ThemeMode.NEON ? (
+                                <Zap className={`w-full h-full ${isReached ? 'text-cyan-200 fill-cyan-400' : 'text-gray-600'}`} />
+                            ) : (
+                                <Gift className={`w-full h-full ${isReached ? 'text-pink-600 fill-pink-200 animate-bounce' : 'text-gray-400'}`} />
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
+
             {/* Mascot in Compact Mode - MOVES INSIDE BAR */}
             {compact && (
                 <div 
@@ -519,7 +582,9 @@ export const KawaiiWidget: React.FC<{
     isCelebration: boolean;
     showRoulette: boolean;
     onRouletteComplete: () => void;
-}> = ({ settings, donations, isShaking, isCelebration, showRoulette, onRouletteComplete }) => {
+    activeReward?: TrailReward | null;
+    onRewardComplete?: () => void;
+}> = ({ settings, donations, isShaking, isCelebration, showRoulette, onRouletteComplete, activeReward, onRewardComplete }) => {
     
     const { 
         theme, 
@@ -530,7 +595,8 @@ export const KawaiiWidget: React.FC<{
         currentAmount, 
         mascot, 
         primaryColor, 
-        secondaryColor 
+        secondaryColor,
+        jackpotLabel
     } = settings;
 
     const percent = Math.min(100, (currentAmount / goalAmount) * 100);
@@ -574,9 +640,14 @@ export const KawaiiWidget: React.FC<{
         <div className={`relative ${isShaking ? 'animate-shake' : ''} transition-all duration-300`}>
             
             {/* Celebration Overlays */}
-            {isCelebration && <GrandCelebration theme={theme} title={title} currency={currency} amount={goalAmount} />}
+            {isCelebration && <GrandCelebration theme={theme} title={title} currency={currency} amount={goalAmount} jackpotLabel={jackpotLabel} />}
             {isCelebration && <div className="absolute inset-0 pointer-events-none z-50 overflow-visible"><div className="firework"></div></div>}
             
+            {/* Trail Reward Alert Popup */}
+            {activeReward && onRewardComplete && (
+                <RewardAlert reward={activeReward} onComplete={onRewardComplete} />
+            )}
+
             {/* Roulette Wheel Overlay - Centered absolutely to ignore parent bounds in Compact mode */}
             {showRoulette && (
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50">

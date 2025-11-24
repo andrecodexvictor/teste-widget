@@ -59,6 +59,12 @@ export interface Donation {
   timestamp: number;
 }
 
+export interface TrailReward {
+  id: string;
+  amount: number;
+  label: string;
+}
+
 export interface WidgetSettings {
   theme: ThemeMode;
   style: WidgetStyle;
@@ -71,6 +77,10 @@ export interface WidgetSettings {
   goalStartDate: string;
   goalEndDate: string;
   
+  // Trail & Jackpot
+  jackpotLabel: string;
+  trailRewards: TrailReward[];
+
   // Visuals
   currency: string;
   title: string;
@@ -113,6 +123,10 @@ export const DEFAULT_SETTINGS: WidgetSettings = {
   subGoalInterval: 100,
   goalStartDate: '',
   goalEndDate: '',
+  
+  jackpotLabel: 'Cosplay Stream',
+  trailRewards: [],
+
   currency: 'R$',
   title: 'Monthly Goal',
   mascot: MascotType.CAT_GAMER,

@@ -1,8 +1,7 @@
 
-
 import React, { useState } from 'react';
-import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle, MascotReaction, CompactTitleAlign } from '../types';
-import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap, Check, Wifi, WifiOff, Timer, AlignLeft, AlignRight, Type, MoveVertical, MoveHorizontal } from 'lucide-react';
+import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle, MascotReaction, CompactTitleAlign, TrailReward } from '../types';
+import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap, Check, Wifi, WifiOff, Timer, AlignLeft, AlignRight, Type, MoveVertical, MoveHorizontal, Map, Plus, Trash2, Trophy } from 'lucide-react';
 
 interface SettingsPanelProps {
     settings: WidgetSettings;
@@ -14,6 +13,10 @@ interface SettingsPanelProps {
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSettings, onSimulateDonation, socketStatus }) => {
     
     const [showSecrets, setShowSecrets] = useState(false);
+    
+    // Local state for adding new trail rewards
+    const [newRewardAmount, setNewRewardAmount] = useState<number>(0);
+    const [newRewardLabel, setNewRewardLabel] = useState<string>('');
 
     const handleChange = (key: keyof WidgetSettings, value: any) => {
         setSettings(prev => ({ ...prev, [key]: value }));
@@ -24,10 +27,32 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
         handleChange('rouletteEvents', lines);
     };
 
+    const addTrailReward = () => {
+        if (newRewardAmount > 0 && newRewardLabel.trim() !== '') {
+            const newReward: TrailReward = {
+                id: Date.now().toString(),
+                amount: newRewardAmount,
+                label: newRewardLabel
+            };
+            
+            // Add and sort by amount
+            const updatedRewards = [...settings.trailRewards, newReward].sort((a, b) => a.amount - b.amount);
+            
+            handleChange('trailRewards', updatedRewards);
+            setNewRewardAmount(0);
+            setNewRewardLabel('');
+        }
+    };
+
+    const removeTrailReward = (id: string) => {
+        const updatedRewards = settings.trailRewards.filter(r => r.id !== id);
+        handleChange('trailRewards', updatedRewards);
+    };
+
     return (
         <div className="p-6 space-y-8">
             
-            {/* Style Mode Section (New) */}
+            {/* Style Mode Section */}
             <section className="space-y-3">
                 <h3 className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
                     <Layout size={14} /> Widget Layout
@@ -95,9 +120,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                                 </div>
                             )}
                         </div>
-                        <a href="https://streamelements.com/dashboard/account/channels" target="_blank" rel="noreferrer" className="text-[10px] text-indigo-400 hover:underline mt-1 inline-block">
-                            Find in Dashboard &gt; Account &gt; Channels
-                        </a>
                     </div>
 
                     <div>
@@ -118,9 +140,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                                 </div>
                             )}
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-1">
-                            Paste your LivePix Widget URL to enable instant Pix alerts.
-                        </p>
                     </div>
                 </div>
             </section>
@@ -220,11 +239,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                                 onChange={(e) => handleChange('compactTitleOffset', parseInt(e.target.value))}
                                 className="w-full"
                             />
-                            <div className="flex justify-between text-[10px] text-gray-400">
-                                <span>Up</span>
-                                <span>{settings.compactTitleOffset}px</span>
-                                <span>Down</span>
-                            </div>
                         </div>
 
                          {/* Width Control */}
@@ -254,22 +268,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                     <DollarSign size={14} /> Goal Logic
                 </h3>
                 
-                {/* Goal Mode Toggle */}
-                <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
-                    <button 
-                        onClick={() => handleChange('goalMode', GoalMode.SIMPLE)}
-                        className={`flex-1 text-xs py-1.5 rounded-md font-semibold transition ${settings.goalMode === GoalMode.SIMPLE ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
-                    >
-                        One Big Goal
-                    </button>
-                    <button 
-                        onClick={() => handleChange('goalMode', GoalMode.SUBGOALS)}
-                        className={`flex-1 text-xs py-1.5 rounded-md font-semibold transition ${settings.goalMode === GoalMode.SUBGOALS ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'}`}
-                    >
-                        Sub-Goals (Escadinha)
-                    </button>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs text-gray-500 mb-1">Total Target</label>
@@ -291,23 +289,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                     </div>
                 </div>
 
-                {settings.goalMode === GoalMode.SUBGOALS && (
-                    <div className="bg-indigo-50 p-3 rounded-md border border-indigo-100">
-                        <label className="block text-xs text-indigo-700 font-bold mb-1 flex items-center gap-1">
-                            <Dna size={12} />
-                            Sub-Goal Step Amount
-                        </label>
-                        <div className="text-[10px] text-indigo-500 mb-1">Trigger event every time this amount is reached.</div>
-                        <input 
-                            type="number" 
-                            value={settings.subGoalInterval}
-                            onChange={(e) => handleChange('subGoalInterval', parseInt(e.target.value))}
-                            className="w-full p-2 bg-black text-white border border-indigo-200 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                            placeholder="e.g. 100"
-                        />
-                    </div>
-                )}
-
                 <div>
                     <label className="block text-xs text-gray-500 mb-1">Widget Title</label>
                     <input 
@@ -316,6 +297,70 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                         onChange={(e) => handleChange('title', e.target.value)}
                         className="w-full p-2 bg-black text-white border border-gray-700 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
+                </div>
+            </section>
+
+            {/* Trail & Jackpot Section */}
+            <section className="space-y-3">
+                <h3 className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
+                    <Map size={14} /> Trail & Jackpot
+                </h3>
+                
+                {/* Jackpot Settings */}
+                <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                    <label className="block text-xs font-bold text-yellow-700 mb-1 flex items-center gap-1">
+                        <Trophy size={12} /> Jackpot Reward (Final Goal)
+                    </label>
+                    <input 
+                        type="text"
+                        value={settings.jackpotLabel}
+                        onChange={(e) => handleChange('jackpotLabel', e.target.value)}
+                        className="w-full p-2 bg-white border border-yellow-300 rounded text-xs"
+                        placeholder="e.g. Cosplay Stream, 12h Stream"
+                    />
+                </div>
+
+                {/* Trail List */}
+                <div className="space-y-2">
+                    <label className="block text-xs text-gray-500">Intermediate Rewards</label>
+                    
+                    {/* List existing rewards */}
+                    <div className="space-y-1">
+                        {settings.trailRewards.map((reward) => (
+                            <div key={reward.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded border border-gray-200 text-xs">
+                                <div className="font-mono font-bold w-12 text-indigo-600">{settings.currency}{reward.amount}</div>
+                                <div className="flex-1 truncate font-medium">{reward.label}</div>
+                                <button onClick={() => removeTrailReward(reward.id)} className="text-red-400 hover:text-red-600">
+                                    <Trash2 size={12} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Add new reward */}
+                    <div className="flex gap-2 items-center mt-2">
+                        <input 
+                            type="number"
+                            value={newRewardAmount || ''}
+                            onChange={(e) => setNewRewardAmount(parseInt(e.target.value))}
+                            placeholder="Amt"
+                            className="w-16 p-2 bg-white border rounded text-xs"
+                        />
+                        <input 
+                            type="text"
+                            value={newRewardLabel}
+                            onChange={(e) => setNewRewardLabel(e.target.value)}
+                            placeholder="Reward name (e.g. Skin Giveaway)"
+                            className="flex-1 p-2 bg-white border rounded text-xs"
+                        />
+                        <button 
+                            onClick={addTrailReward}
+                            className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                            disabled={!newRewardAmount || !newRewardLabel}
+                        >
+                            <Plus size={14} />
+                        </button>
+                    </div>
                 </div>
             </section>
             
@@ -350,7 +395,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold uppercase text-gray-400 flex items-center gap-2">
-                        <Gift size={14} /> Event Roulette
+                        <Gift size={14} /> Event Roulette (Sub-goals)
                     </h3>
                     <div className="flex items-center">
                         <input 
@@ -363,16 +408,28 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                 </div>
                 
                 {settings.enableRoulette && (
-                    <div className="animate-fade-in">
-                         <label className="block text-xs text-gray-500 mb-1">Events (One per line)</label>
+                    <div className="animate-fade-in bg-gray-50 p-3 rounded border border-gray-200">
+                         <div className="mb-2">
+                            <label className="block text-xs text-indigo-700 font-bold mb-1 flex items-center gap-1">
+                                <Dna size={12} />
+                                Spin Every
+                            </label>
+                            <input 
+                                type="number" 
+                                value={settings.subGoalInterval}
+                                onChange={(e) => handleChange('subGoalInterval', parseInt(e.target.value))}
+                                className="w-full p-2 bg-white border border-gray-300 rounded text-xs"
+                                placeholder="e.g. 100"
+                            />
+                        </div>
+                         <label className="block text-xs text-gray-500 mb-1">Roulette Options (One per line)</label>
                          <textarea 
                             value={settings.rouletteEvents.join('\n')}
                             onChange={handleEventsChange}
                             rows={5}
-                            className="w-full p-2 bg-black text-white border border-gray-700 rounded-md text-xs focus:ring-2 focus:ring-indigo-500 outline-none resize-y"
+                            className="w-full p-2 bg-white text-gray-800 border border-gray-300 rounded-md text-xs focus:ring-2 focus:ring-indigo-500 outline-none resize-y"
                             placeholder="Sing a song&#10;Do 10 squats&#10;Gift sub"
                          />
-                         <p className="text-[10px] text-gray-400 mt-1">Will trigger when a goal or sub-goal is reached.</p>
                     </div>
                 )}
             </section>
@@ -497,7 +554,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                         onClick={() => onSimulateDonation(100, "Whale", "Milestone!")}
                         className="col-span-2 bg-green-500 text-white text-xs font-bold py-2 px-3 rounded hover:bg-green-600 transition shadow-sm"
                     >
-                        Add $100 (Trigger Sub-Goal)
+                        Add $100 (Trigger Sub-Goal/Trail)
                     </button>
                 </div>
                 <p className="text-[10px] text-green-600 opacity-70 text-center">

@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { WidgetSettings, DEFAULT_SETTINGS, Donation, ThemeMode, WidgetPosition, GoalMode, StreamElementsEvent } from './types';
+import { WidgetSettings, DEFAULT_SETTINGS, Donation, ThemeMode, WidgetPosition, GoalMode, StreamElementsEvent, TrailReward } from './types';
 import { KawaiiWidget } from './components/KawaiiWidget';
 import { SettingsPanel } from './components/SettingsPanel';
 import { RefreshCw, Monitor, Heart, ExternalLink, Save } from 'lucide-react';
@@ -46,6 +47,10 @@ const App: React.FC = () => {
   const [isShaking, setIsShaking] = useState(false);
   const [isCelebration, setIsCelebration] = useState(false);
   const [showRoulette, setShowRoulette] = useState(false);
+  
+  // State for active trail reward popup
+  const [activeReward, setActiveReward] = useState<TrailReward | null>(null);
+
   const [socketStatus, setSocketStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   
   // Debounce logic for StreamElements Token to prevent socket spam while typing
@@ -109,7 +114,7 @@ const App: React.FC = () => {
         const oldAmount = prev.currentAmount;
         const newAmount = oldAmount + amount;
         
-        // Check for Sub-goal triggers
+        // --- LOGIC: Roulette Trigger ---
         let shouldTriggerRoulette = false;
         
         if (prev.enableRoulette) {
@@ -127,10 +132,24 @@ const App: React.FC = () => {
                 }
             }
         }
-
-        // Delay setting the roulette slightly so the shake happens first
+        
         if (shouldTriggerRoulette) {
             setTimeout(() => setShowRoulette(true), 800);
+        }
+
+        // --- LOGIC: Trail Rewards Trigger ---
+        // Check if any rewards in trailRewards were crossed
+        if (prev.trailRewards && prev.trailRewards.length > 0) {
+            // Find the highest reward that was crossed just now
+            const crossedRewards = prev.trailRewards.filter(r => 
+                oldAmount < r.amount && newAmount >= r.amount
+            );
+            
+            if (crossedRewards.length > 0) {
+                // Show the last crossed reward (most recent milestone)
+                const latestReward = crossedRewards[crossedRewards.length - 1];
+                setTimeout(() => setActiveReward(latestReward), 600);
+            }
         }
 
         return { ...prev, currentAmount: newAmount };
@@ -229,10 +248,8 @@ const App: React.FC = () => {
       url.searchParams.set('overlay', 'true');
       
       // Encode settings into URL to guarantee persistence in the new window
-      // We use base64 encoding of the JSON string to keep the URL robust
       try {
           const settingsStr = JSON.stringify(settings);
-          // encodeURIComponent fixes issues with special chars like currency symbols before base64
           const encodedSettings = btoa(encodeURIComponent(settingsStr));
           url.searchParams.set('data', encodedSettings);
       } catch (e) {
@@ -261,6 +278,8 @@ const App: React.FC = () => {
                       isCelebration={isCelebration}
                       showRoulette={showRoulette}
                       onRouletteComplete={() => setShowRoulette(false)}
+                      activeReward={activeReward}
+                      onRewardComplete={() => setActiveReward(null)}
                   />
               </div>
           </div>
@@ -326,6 +345,8 @@ const App: React.FC = () => {
                 isCelebration={isCelebration}
                 showRoulette={showRoulette}
                 onRouletteComplete={() => setShowRoulette(false)}
+                activeReward={activeReward}
+                onRewardComplete={() => setActiveReward(null)}
             />
         </div>
 
