@@ -87,6 +87,7 @@ export interface WidgetSettings {
   useCustomBarColor: boolean;
   customBarColor: string;
   compactTitleAlign: CompactTitleAlign;
+  compactWidth: number; // New: Width control for compact mode
   
   // Title Customization
   titleFontSize: number;
@@ -127,6 +128,7 @@ export const DEFAULT_SETTINGS: WidgetSettings = {
   useCustomBarColor: false,
   customBarColor: '#4ade80',
   compactTitleAlign: CompactTitleAlign.LEFT,
+  compactWidth: 400, // Default width
   
   titleFontSize: 14,
   compactTitleOffset: 0,

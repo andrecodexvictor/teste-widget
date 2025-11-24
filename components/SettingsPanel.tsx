@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle, MascotReaction, CompactTitleAlign } from '../types';
-import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap, Check, Wifi, WifiOff, Timer, AlignLeft, AlignRight, Type, MoveVertical } from 'lucide-react';
+import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap, Check, Wifi, WifiOff, Timer, AlignLeft, AlignRight, Type, MoveVertical, MoveHorizontal } from 'lucide-react';
 
 interface SettingsPanelProps {
     settings: WidgetSettings;
@@ -202,26 +202,47 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                     </div>
                 </div>
 
-                {/* Vertical Offset (Only relevant for Compact mode usually, but can apply to both) */}
+                {/* Compact Mode Specifics */}
                 {settings.style === WidgetStyle.COMPACT && (
-                    <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
-                        <label className="block text-xs text-indigo-700 font-bold mb-1 flex items-center gap-1">
-                            <MoveVertical size={12} />
-                            Compact Title Vertical Offset
-                        </label>
-                        <input 
-                            type="range" 
-                            min="-50" 
-                            max="50" 
-                            step="1"
-                            value={settings.compactTitleOffset}
-                            onChange={(e) => handleChange('compactTitleOffset', parseInt(e.target.value))}
-                            className="w-full"
-                        />
-                        <div className="flex justify-between text-[10px] text-gray-400">
-                            <span>Up</span>
-                            <span>{settings.compactTitleOffset}px</span>
-                            <span>Down</span>
+                    <div className="space-y-3">
+                        {/* Vertical Offset */}
+                        <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
+                            <label className="block text-xs text-indigo-700 font-bold mb-1 flex items-center gap-1">
+                                <MoveVertical size={12} />
+                                Compact Title Vertical Offset
+                            </label>
+                            <input 
+                                type="range" 
+                                min="-50" 
+                                max="50" 
+                                step="1"
+                                value={settings.compactTitleOffset}
+                                onChange={(e) => handleChange('compactTitleOffset', parseInt(e.target.value))}
+                                className="w-full"
+                            />
+                            <div className="flex justify-between text-[10px] text-gray-400">
+                                <span>Up</span>
+                                <span>{settings.compactTitleOffset}px</span>
+                                <span>Down</span>
+                            </div>
+                        </div>
+
+                         {/* Width Control */}
+                        <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
+                            <label className="block text-xs text-indigo-700 font-bold mb-1 flex items-center gap-1">
+                                <MoveHorizontal size={12} />
+                                Compact Bar Width
+                            </label>
+                            <input 
+                                type="range" 
+                                min="200" 
+                                max="1000" 
+                                step="10"
+                                value={settings.compactWidth}
+                                onChange={(e) => handleChange('compactWidth', parseInt(e.target.value))}
+                                className="w-full"
+                            />
+                            <div className="text-[10px] text-right text-gray-400">{settings.compactWidth}px</div>
                         </div>
                     </div>
                 )}

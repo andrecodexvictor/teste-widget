@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { WidgetSettings, ThemeMode, Donation, MascotType, WidgetStyle, MascotReaction, CompactTitleAlign } from '../types';
 import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift, Glasses, Flame, Timer, Music, Cloud, Triangle } from 'lucide-react';
@@ -539,7 +541,8 @@ export const KawaiiWidget: React.FC<{
     // NOTICE: removed overflow-hidden to allow mascot to stick out
     const getContainerClassWithoutOverflow = () => {
         if (style === WidgetStyle.COMPACT) {
-             return "relative w-[400px] flex flex-col gap-1";
+             // Removed hardcoded w-[400px]
+             return "relative flex flex-col gap-1";
         }
 
         switch(theme) {
@@ -587,7 +590,10 @@ export const KawaiiWidget: React.FC<{
                 </div>
             )}
 
-            <div className={getContainerClassWithoutOverflow()}>
+            <div 
+                className={getContainerClassWithoutOverflow()}
+                style={style === WidgetStyle.COMPACT ? { width: `${settings.compactWidth}px` } : undefined}
+            >
                 
                 {/* Standard Mode Content */}
                 {style === WidgetStyle.STANDARD && (
