@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle, MascotReaction, CompactTitleAlign, TrailReward } from '../types';
 import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap, Check, Wifi, WifiOff, Timer, AlignLeft, AlignRight, Type, MoveVertical, MoveHorizontal, Map, Plus, Trash2, Trophy, RotateCcw } from 'lucide-react';
@@ -225,7 +224,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                 {/* Compact Mode Specifics */}
                 {settings.style === WidgetStyle.COMPACT && (
                     <div className="space-y-3">
-                        {/* Vertical Offset */}
                         <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
                             <label className="block text-xs text-indigo-700 font-bold mb-1 flex items-center gap-1">
                                 <MoveVertical size={12} />

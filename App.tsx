@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { WidgetSettings, DEFAULT_SETTINGS, Donation, ThemeMode, WidgetPosition, GoalMode, StreamElementsEvent, TrailReward } from './types';
 import { KawaiiWidget } from './components/KawaiiWidget';
@@ -9,39 +8,59 @@ const STORAGE_KEY = 'kawaii-widget-settings';
 const STORAGE_KEY_DONATIONS = 'kawaii-widget-donations';
 
 const App: React.FC = () => {
+  
+  // Helper to parse URL data (Settings + Donations bundle)
+  const getUrlData = () => {
+      const params = new URLSearchParams(window.location.search);
+      const dataParam = params.get('data');
+      if (dataParam) {
+          try {
+              const decoded = decodeURIComponent(atob(dataParam));
+              return JSON.parse(decoded);
+          } catch (e) {
+              console.error("Failed to parse URL data", e);
+          }
+      }
+      return null;
+  };
+
+  // We parse once to avoid redundant operations
+  const urlData = getUrlData();
+
   // Initialize settings
   // Priority: 1. URL Params (Snapshot) -> 2. LocalStorage -> 3. Defaults
   const [settings, setSettings] = useState<WidgetSettings>(() => {
-    try {
-        // 1. Check URL Params (for Overlay Mode snapshot)
-        const params = new URLSearchParams(window.location.search);
-        const dataParam = params.get('data');
-        
-        if (dataParam) {
-            try {
-                // Decode base64 utf-8 string
-                const decoded = decodeURIComponent(atob(dataParam));
-                const parsed = JSON.parse(decoded);
-                return { ...DEFAULT_SETTINGS, ...parsed };
-            } catch (e) {
-                console.error("Failed to parse URL settings", e);
-            }
+    // 1. Check URL Data
+    if (urlData) {
+        // Support new format { settings: ..., donations: ... }
+        if (urlData.settings) {
+            return { ...DEFAULT_SETTINGS, ...urlData.settings };
         }
+        // Support legacy format (just settings object)
+        if (urlData.theme) {
+            return { ...DEFAULT_SETTINGS, ...urlData };
+        }
+    }
 
-        // 2. Check LocalStorage
+    // 2. Check LocalStorage
+    try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
         }
-        return DEFAULT_SETTINGS;
-    } catch (error) {
-        console.error("Error loading settings:", error);
-        return DEFAULT_SETTINGS;
-    }
+    } catch (e) { console.error(e); }
+
+    return DEFAULT_SETTINGS;
   });
 
-  // Initialize Donations from LocalStorage to persist across reloads
+  // Initialize Donations
   const [donations, setDonations] = useState<Donation[]>(() => {
+      // 1. Check URL Data
+      if (urlData && urlData.donations) {
+          return urlData.donations;
+      }
+
+      // 2. Check LocalStorage
       try {
           const saved = localStorage.getItem(STORAGE_KEY_DONATIONS);
           if (saved) {
@@ -91,6 +110,31 @@ const App: React.FC = () => {
   useEffect(() => {
       localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations));
   }, [donations]);
+
+  // NEW: Live Update URL in Overlay Mode
+  // Bundles BOTH settings and donations into the URL so a refresh restores everything accurately.
+  useEffect(() => {
+      if (isOverlayMode) {
+          try {
+              const url = new URL(window.location.href);
+              
+              // Create a bundle
+              const bundle = {
+                  settings: settings,
+                  donations: donations
+              };
+
+              const bundleStr = JSON.stringify(bundle);
+              const encodedBundle = btoa(encodeURIComponent(bundleStr));
+              url.searchParams.set('data', encodedBundle);
+              
+              // Update URL without reloading the page
+              window.history.replaceState(null, '', url.toString());
+          } catch (e) {
+              console.error("Failed to update URL state", e);
+          }
+      }
+  }, [settings, donations, isOverlayMode]);
 
   // Debounce the token update for socket connection (waits 1s after typing stops)
   useEffect(() => {
@@ -282,11 +326,15 @@ const App: React.FC = () => {
       const url = new URL(window.location.href);
       url.searchParams.set('overlay', 'true');
       
-      // Encode settings into URL to guarantee persistence in the new window
+      // Encode settings AND donations into URL to guarantee persistence
       try {
-          const settingsStr = JSON.stringify(settings);
-          const encodedSettings = btoa(encodeURIComponent(settingsStr));
-          url.searchParams.set('data', encodedSettings);
+          const bundle = {
+              settings: settings,
+              donations: donations
+          };
+          const bundleStr = JSON.stringify(bundle);
+          const encodedBundle = btoa(encodeURIComponent(bundleStr));
+          url.searchParams.set('data', encodedBundle);
       } catch (e) {
           console.error("Failed to encode settings for URL", e);
       }

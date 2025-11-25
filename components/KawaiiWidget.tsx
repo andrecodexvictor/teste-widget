@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { WidgetSettings, ThemeMode, Donation, MascotType, WidgetStyle, MascotReaction, CompactTitleAlign, TrailReward } from '../types';
 import { Sparkles, Star, Heart, Gamepad2, Zap, Crown, Coins, Gift, Glasses, Flame, Timer, Music, Cloud, Triangle, Trophy, Lock } from 'lucide-react';
@@ -611,6 +610,7 @@ export const KawaiiWidget: React.FC<{
     // Dynamic Classes based on Theme
     const getContainerClassWithoutOverflow = () => {
         if (style === WidgetStyle.COMPACT) {
+             // Removed hardcoded w-[400px]
              return "relative flex flex-col gap-1";
         }
 
