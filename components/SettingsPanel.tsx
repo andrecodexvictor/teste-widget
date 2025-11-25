@@ -1,16 +1,17 @@
 
 import React, { useState } from 'react';
 import { WidgetSettings, ThemeMode, MascotType, WidgetPosition, GoalMode, WidgetStyle, MascotReaction, CompactTitleAlign, TrailReward } from '../types';
-import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap, Check, Wifi, WifiOff, Timer, AlignLeft, AlignRight, Type, MoveVertical, MoveHorizontal, Map, Plus, Trash2, Trophy } from 'lucide-react';
+import { Sliders, Layout, Palette, PlayCircle, DollarSign, Gift, Dna, Maximize2, Minimize2, Smile, Globe, Eye, EyeOff, Zap, Check, Wifi, WifiOff, Timer, AlignLeft, AlignRight, Type, MoveVertical, MoveHorizontal, Map, Plus, Trash2, Trophy, RotateCcw } from 'lucide-react';
 
 interface SettingsPanelProps {
     settings: WidgetSettings;
     setSettings: React.Dispatch<React.SetStateAction<WidgetSettings>>;
     onSimulateDonation: (amount: number, user: string, msg: string) => void;
     socketStatus: 'disconnected' | 'connecting' | 'connected';
+    onFullReset: () => void;
 }
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSettings, onSimulateDonation, socketStatus }) => {
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSettings, onSimulateDonation, socketStatus, onFullReset }) => {
     
     const [showSecrets, setShowSecrets] = useState(false);
     
@@ -50,7 +51,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
     };
 
     return (
-        <div className="p-6 space-y-8">
+        <div className="p-6 space-y-8 pb-12">
             
             {/* Style Mode Section */}
             <section className="space-y-3">
@@ -559,6 +560,22 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ settings, setSetti
                 </div>
                 <p className="text-[10px] text-green-600 opacity-70 text-center">
                     Clicking updates the preview & triggers the selected reaction.
+                </p>
+            </section>
+
+            {/* Danger Zone - Manual Reset */}
+            <section className="p-4 bg-red-50 rounded-xl border border-red-100 space-y-3 mt-8">
+                 <h3 className="text-xs font-bold uppercase text-red-600 flex items-center gap-2">
+                    <RotateCcw size={14} /> Danger Zone
+                </h3>
+                <button 
+                    onClick={onFullReset}
+                    className="w-full bg-red-500 text-white text-xs font-bold py-3 px-4 rounded-lg hover:bg-red-600 transition shadow-sm flex items-center justify-center gap-2"
+                >
+                    <RotateCcw size={16} /> Reset Progress & History
+                </button>
+                <p className="text-[10px] text-red-500 opacity-70 text-center">
+                    Clears Current Amount (0) and Donation History. Use this when starting a new month/goal.
                 </p>
             </section>
 

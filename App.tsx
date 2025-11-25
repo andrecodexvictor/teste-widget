@@ -6,6 +6,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { RefreshCw, Monitor, Heart, ExternalLink, Save } from 'lucide-react';
 
 const STORAGE_KEY = 'kawaii-widget-settings';
+const STORAGE_KEY_DONATIONS = 'kawaii-widget-donations';
 
 const App: React.FC = () => {
   // Initialize settings
@@ -39,11 +40,24 @@ const App: React.FC = () => {
     }
   });
 
-  const [donations, setDonations] = useState<Donation[]>([
-    { id: '1', username: 'NekoChan99', amount: 50, message: 'Keep it up!', timestamp: Date.now() },
-    { id: '2', username: 'MarioFan', amount: 20, message: 'Here we go!', timestamp: Date.now() - 10000 },
-    { id: '3', username: 'CyberPunk', amount: 100, message: 'Neon vibes only.', timestamp: Date.now() - 20000 },
-  ]);
+  // Initialize Donations from LocalStorage to persist across reloads
+  const [donations, setDonations] = useState<Donation[]>(() => {
+      try {
+          const saved = localStorage.getItem(STORAGE_KEY_DONATIONS);
+          if (saved) {
+              return JSON.parse(saved);
+          }
+          // Default mock data only if nothing is saved (first run)
+          return [
+            { id: '1', username: 'NekoChan99', amount: 50, message: 'Keep it up!', timestamp: Date.now() },
+            { id: '2', username: 'MarioFan', amount: 20, message: 'Here we go!', timestamp: Date.now() - 10000 },
+            { id: '3', username: 'CyberPunk', amount: 100, message: 'Neon vibes only.', timestamp: Date.now() - 20000 },
+          ];
+      } catch (error) {
+          return [];
+      }
+  });
+
   const [isShaking, setIsShaking] = useState(false);
   const [isCelebration, setIsCelebration] = useState(false);
   const [showRoulette, setShowRoulette] = useState(false);
@@ -73,6 +87,11 @@ const App: React.FC = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   }, [settings]);
 
+  // Save donations to LocalStorage whenever they change
+  useEffect(() => {
+      localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations));
+  }, [donations]);
+
   // Debounce the token update for socket connection (waits 1s after typing stops)
   useEffect(() => {
       const handler = setTimeout(() => {
@@ -92,11 +111,26 @@ const App: React.FC = () => {
                   console.error("Error syncing settings:", error);
               }
           }
+          // Sync donations too if updated in another tab
+          if (e.key === STORAGE_KEY_DONATIONS && e.newValue) {
+              try {
+                  setDonations(JSON.parse(e.newValue));
+              } catch (error) { console.error(error); }
+          }
       };
 
       window.addEventListener('storage', handleStorageChange);
       return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
+
+  // Reset Handler
+  const handleFullReset = () => {
+      if (window.confirm("Are you sure? This will reset the Current Amount to 0 and clear the Donation History.")) {
+          setSettings(prev => ({ ...prev, currentAmount: 0 }));
+          setDonations([]);
+          // LocalStorage updates automatically via useEffects
+      }
+  };
 
   // Simulate adding a donation (used by both manual buttons and SE events)
   const simulateDonation = useCallback((amount: number, username: string, message: string) => {
@@ -243,6 +277,7 @@ const App: React.FC = () => {
   const handleLaunchOverlay = () => {
       // Force save current state before opening
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations));
       
       const url = new URL(window.location.href);
       url.searchParams.set('overlay', 'true');
@@ -306,6 +341,7 @@ const App: React.FC = () => {
                 setSettings={setSettings} 
                 onSimulateDonation={simulateDonation}
                 socketStatus={socketStatus}
+                onFullReset={handleFullReset}
             />
         </div>
 
