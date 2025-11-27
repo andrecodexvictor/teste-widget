@@ -4,8 +4,8 @@ import { KawaiiWidget } from './components/KawaiiWidget';
 import { SettingsPanel } from './components/SettingsPanel';
 import { RefreshCw, Monitor, Heart, ExternalLink, Save } from 'lucide-react';
 
+// We only use LocalStorage for the EDITOR panel now, not for the Overlay state persistence
 const STORAGE_KEY = 'kawaii-widget-settings';
-const STORAGE_KEY_DONATIONS = 'kawaii-widget-donations';
 
 const App: React.FC = () => {
   
@@ -25,14 +25,22 @@ const App: React.FC = () => {
   };
 
   const urlData = getUrlData();
+  const [isOverlayMode, setIsOverlayMode] = useState(false);
+
+  // Check Overlay Mode immediately
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('overlay') === 'true') {
+        setIsOverlayMode(true);
+        document.body.style.backgroundColor = 'transparent';
+    }
+  }, []);
 
   // Initialize settings
   const [settings, setSettings] = useState<WidgetSettings>(() => {
-    // 1. Base Defaults
     let finalSettings = { ...DEFAULT_SETTINGS };
-    
-    // 2. Apply URL Config (DESIGN ONLY)
-    // The URL now serves as a "Template" or "Style Sheet"
+
+    // 1. URL Data (Highest Priority for Overlay)
     if (urlData) {
         if (urlData.settings) {
             finalSettings = { ...finalSettings, ...urlData.settings };
@@ -41,42 +49,37 @@ const App: React.FC = () => {
         }
     }
 
-    // 3. Apply LocalStorage (PROGRESS Persistence)
-    // LocalStorage is the Source of Truth for "Current Amount" inside the OBS Browser
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            const parsedSaved = JSON.parse(saved);
-            
-            // CRITICAL FIX: Always prefer the LocalStorage 'currentAmount' over the URL/Default
-            // because the URL is static and frozen in time, but LS updates with events.
-            if (parsedSaved.currentAmount !== undefined && !isNaN(Number(parsedSaved.currentAmount))) {
-                finalSettings.currentAmount = Number(parsedSaved.currentAmount);
+    // 2. LocalStorage (Only for Editor Mode, ignore if Overlay Mode to prevent caching issues)
+    // We check window.location to determine mode during initial render
+    const isOverlay = window.location.search.includes('overlay=true');
+    
+    if (!isOverlay) {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsedSaved = JSON.parse(saved);
+                finalSettings = { ...finalSettings, ...parsedSaved };
             }
-            
-            // We can also sync other logic fields if desired, but visuals usually come from URL
-        }
-    } catch (e) { console.error("Error loading settings from local storage", e); }
+        } catch (e) { console.error(e); }
+    }
+
+    // Ensure numbers
+    finalSettings.currentAmount = Number(finalSettings.currentAmount) || 0;
+    finalSettings.goalAmount = Number(finalSettings.goalAmount) || 100;
 
     return finalSettings;
   });
 
-  // Initialize Donations (STRICT PRIORITY: LocalStorage > URL)
+  // Initialize Donations
   const [donations, setDonations] = useState<Donation[]>(() => {
-      // 1. LocalStorage (The Authority)
-      try {
-          const saved = localStorage.getItem(STORAGE_KEY_DONATIONS);
-          if (saved) {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed)) return parsed;
-          }
-      } catch (error) { console.error(error); }
+      // 1. URL Data
+      if (urlData && urlData.donations && Array.isArray(urlData.donations)) {
+          return urlData.donations;
+      }
 
-      // 2. URL Data is ignored for donations to prevent "zombie" donations from a static URL appearing
-      
-      // 3. Default (Only for fresh editor view, not overlay)
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('overlay') === 'true') return []; 
+      // 2. Editor Mock Data (Only if NOT overlay)
+      const isOverlay = window.location.search.includes('overlay=true');
+      if (isOverlay) return [];
 
       return [
         { id: '1', username: 'NekoChan99', amount: 50, message: 'Keep it up!', timestamp: Date.now() },
@@ -91,51 +94,18 @@ const App: React.FC = () => {
   const [activeReward, setActiveReward] = useState<TrailReward | null>(null);
   const [socketStatus, setSocketStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [debouncedToken, setDebouncedToken] = useState(settings.streamElementsToken);
-  const [isOverlayMode, setIsOverlayMode] = useState(false);
 
   // Ref to track previous amount for triggering events on change
   const prevAmountRef = useRef(settings.currentAmount);
 
-  // Check Overlay Mode
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('overlay') === 'true') {
-        setIsOverlayMode(true);
-        document.body.style.backgroundColor = 'transparent';
-    }
-  }, []);
-
-  // Persistence to LocalStorage (Always runs on every change)
+  // Persistence: Only save to LocalStorage if we are in EDITOR mode.
+  // We DO NOT save in Overlay mode to prevent the OBS browser from caching old values
+  // effectively ignoring the URL parameters.
   useEffect(() => { 
-      // Save current progress to local storage of the browser/OBS source
-      const settingsToSave = {
-          ...settings,
-          currentAmount: Number(settings.currentAmount)
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave)); 
-  }, [settings]);
-  
-  useEffect(() => { 
-      localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations)); 
-  }, [donations]);
-
-  // Sync across tabs/windows via LocalStorage Events
-  useEffect(() => {
-      const handleStorageChange = (e: StorageEvent) => {
-          if (e.key === STORAGE_KEY && e.newValue) {
-              try { 
-                  const newSettings = JSON.parse(e.newValue);
-                  // When syncing from another tab, we update everything
-                  setSettings(newSettings); 
-              } catch (e) { console.error(e); }
-          }
-          if (e.key === STORAGE_KEY_DONATIONS && e.newValue) {
-              try { setDonations(JSON.parse(e.newValue)); } catch (e) { console.error(e); }
-          }
-      };
-      window.addEventListener('storage', handleStorageChange);
-      return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+      if (!isOverlayMode) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); 
+      }
+  }, [settings, isOverlayMode]);
 
   // --- CENTRAL EVENT TRIGGER LOGIC ---
   useEffect(() => {
@@ -189,17 +159,18 @@ const App: React.FC = () => {
       return () => clearTimeout(handler);
   }, [settings.streamElementsToken]);
 
-  // Reset Handler
+  // Reset Handler (Manual)
   const handleFullReset = () => {
-      if (window.confirm("Are you sure? This will reset the Current Amount to 0 and clear the Donation History.")) {
+      if (window.confirm("Are you sure? This will reset the Current Amount to 0.")) {
           setSettings(prev => ({ ...prev, currentAmount: 0 }));
           setDonations([]);
       }
   };
 
-  // Add Donation Logic (Updates State -> Triggers Effect -> Saves to LS)
+  // Add Donation Logic - Internal Computation
+  // This updates the React State (memory), updating the UI instantly
+  // but does not write to localStorage in Overlay mode.
   const simulateDonation = useCallback((amountRaw: number | string, username: string, message: string) => {
-    // SECURITY: Force number conversion
     const amount = parseFloat(String(amountRaw));
     if (isNaN(amount)) return;
 
@@ -264,31 +235,14 @@ const App: React.FC = () => {
   };
 
   const handleLaunchOverlay = () => {
-      // 1. Force save current state locally so the user doesn't lose it in the editor
-      const settingsToSave = { ...settings, currentAmount: Number(settings.currentAmount) };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
-      localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations));
-      
+      // When launching overlay, we bake the CURRENT state into the URL.
+      // This URL becomes the "Save File".
       const url = new URL(window.location.href);
       url.searchParams.set('overlay', 'true');
       
       try {
-          // 2. Create a "Sanitized" Settings bundle for the URL
-          // This serves as the DESIGN TEMPLATE. 
-          // We intentionally remove 'currentAmount' progress from the URL 
-          // so that the Overlay relies on its own internal storage/events for progress.
-          const cleanSettings = { ...settings };
-          // @ts-ignore
-          delete cleanSettings.currentAmount; 
-          
-          // Bundle only settings (Design), pass NO donations in URL history
-          const bundle = { 
-              settings: cleanSettings, 
-              donations: [] 
-          };
-          
-          const encodedBundle = btoa(encodeURIComponent(JSON.stringify(bundle)));
-          url.searchParams.set('data', encodedBundle);
+          const bundle = { settings, donations };
+          url.searchParams.set('data', btoa(encodeURIComponent(JSON.stringify(bundle))));
       } catch (e) { console.error(e); }
       
       window.open(url.toString(), '_blank');
