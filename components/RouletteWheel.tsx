@@ -17,12 +17,58 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({ theme, events, onC
     const getColors = () => {
         switch (theme) {
             case ThemeMode.MARIO: return ['#E52521', '#43B047', '#049CD8', '#FBD000'];
-                console.log('[ROULETTE] Winner detected, setting 5s auto-close timer:', winner);
-                // Set a timer to close automatically after 5 seconds
-                autoCloseTimer = setTimeout(() => {
-                    console.log('[ROULETTE] Auto-close timer fired, calling onComplete');
-                    onComplete();
-                }, 5000);
+            case ThemeMode.NEON: return ['#ff00ff', '#00ffff', '#ffff00', '#9d00ff'];
+            default: return ['#FFB7C5', '#B5EAD7', '#E2F0CB', '#FFDAC1', '#E0BBE4']; // Pastels
+        }
+    };
+
+    const colors = getColors();
+    const hasSpun = React.useRef(false);
+
+    useEffect(() => {
+        if (hasSpun.current || events.length === 0) return;
+        hasSpun.current = true;
+
+        // Start spin automatically on mount
+        const spin = () => {
+            setIsSpinning(true);
+
+            // Calculate random winning index
+            const segmentAngle = 360 / events.length;
+            const randomSegment = Math.floor(Math.random() * events.length);
+
+            // Ensure at least 5 full spins (1800 degrees) + specific angle to land on segment
+            // We add random offset within the segment to make it look realistic
+            const extraSpins = 360 * 8;
+            const targetAngle = extraSpins + (randomSegment * segmentAngle) + (segmentAngle / 2);
+
+            setRotation(targetAngle);
+
+            // Determine winner based on final rotation
+            setTimeout(() => {
+                // Simple inversion for clockwise spin
+                const winningEvent = events[events.length - 1 - randomSegment];
+                setWinner(winningEvent);
+                setIsSpinning(false);
+            }, 4000); // Duration matches CSS transition
+        };
+
+        // Short delay before spin starts
+        const timer = setTimeout(spin, 500);
+        return () => clearTimeout(timer);
+    }, []); // Run once on mount
+
+    // Auto-close effect
+    useEffect(() => {
+        let autoCloseTimer: ReturnType<typeof setTimeout>;
+
+        if (winner) {
+            console.log('[ROULETTE] Winner detected, setting 5s auto-close timer:', winner);
+            // Set a timer to close automatically after 5 seconds
+            autoCloseTimer = setTimeout(() => {
+                console.log('[ROULETTE] Auto-close timer fired, calling onComplete');
+                onComplete();
+            }, 5000);
         }
 
         // Cleanup timer if component unmounts or user closes manually
