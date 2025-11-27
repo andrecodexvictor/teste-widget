@@ -27,12 +27,11 @@ const App: React.FC = () => {
   const urlData = getUrlData();
 
   // Initialize settings with Smart Merge
-  // We want Visual Settings from URL (if updated) but Progress from LocalStorage (persistence)
   const [settings, setSettings] = useState<WidgetSettings>(() => {
     let finalSettings = { ...DEFAULT_SETTINGS };
     let hasUrlData = false;
 
-    // 1. Load from URL (Base Config)
+    // 1. Load from URL (Base Config for styles/static settings)
     if (urlData) {
         if (urlData.settings) {
             finalSettings = { ...finalSettings, ...urlData.settings };
@@ -43,22 +42,24 @@ const App: React.FC = () => {
         }
     }
 
-    // 2. Load from LocalStorage (Persisted Progress)
+    // 2. Load from LocalStorage (Persisted Progress - Source of Truth)
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             const parsedSaved = JSON.parse(saved);
             
-            // If we have URL data (user is configuring/embedding), we prioritize URL styles
-            // BUT we prioritize LocalStorage for "Progress" data (currentAmount, etc)
+            // If URL data exists, we merge it, BUT we let LocalStorage override the 'Progress' fields
+            // This ensures that if the stream crashes, we resume from the last saved amount, not the URL amount
             if (hasUrlData) {
                 finalSettings = {
-                    ...finalSettings, // Start with URL Config
-                    currentAmount: parsedSaved.currentAmount, // Restore Progress
-                    // We might want to keep other local settings if they match the "Session"
+                    ...finalSettings, // Start with URL styles
+                    // Override specific progress fields from LocalStorage
+                    currentAmount: parsedSaved.currentAmount !== undefined ? parsedSaved.currentAmount : finalSettings.currentAmount,
+                    // We might also want to persist goalAmount changes if made locally
+                    goalAmount: parsedSaved.goalAmount !== undefined ? parsedSaved.goalAmount : finalSettings.goalAmount,
                 };
             } else {
-                // If no URL data, LocalStorage is king
+                // If no URL data, LocalStorage is the complete source of truth
                 finalSettings = { ...finalSettings, ...parsedSaved };
             }
         }
@@ -69,17 +70,19 @@ const App: React.FC = () => {
 
   // Initialize Donations (Prioritize LocalStorage for history)
   const [donations, setDonations] = useState<Donation[]>(() => {
+      // 1. LocalStorage (PRIMARY SOURCE)
+      // We check this FIRST because recent donations live here, while URL has old snapshots
       try {
           const saved = localStorage.getItem(STORAGE_KEY_DONATIONS);
           if (saved) return JSON.parse(saved);
       } catch (error) { console.error(error); }
 
-      // Fallback to URL data if no local history
+      // 2. URL Data (Fallback)
       if (urlData && urlData.donations) return urlData.donations;
 
-      // Default mock data only for first-time editor view
+      // 3. Default (Only for fresh editor)
       const params = new URLSearchParams(window.location.search);
-      if (params.get('overlay') === 'true') return []; // Empty for fresh overlay
+      if (params.get('overlay') === 'true') return []; 
 
       return [
         { id: '1', username: 'NekoChan99', amount: 50, message: 'Keep it up!', timestamp: Date.now() },
