@@ -237,6 +237,7 @@ const App: React.FC = () => {
         setSettings(prev => ({ ...prev, currentAmount: prev.currentAmount + amount }));
     }, []);
 
+    // --- Socket Logic ---
     // Memoized callback handlers to prevent infinite loop in RouletteWheel useEffect
     const handleRouletteComplete = useCallback(() => {
         console.log('[APP] Roulette complete, closing...');
@@ -342,9 +343,9 @@ const App: React.FC = () => {
                             syncStatus === 'syncing' ? 'text-yellow-600' :
                                 'text-red-600'
                             }`}>
-                            {syncStatus === 'synced' ? 'Ô£ô Synced' :
-                                syncStatus === 'syncing' ? 'Ôƒ│ Syncing...' :
-                                    'Ô£ù Offline'}
+                            {syncStatus === 'synced' ? '✓ Synced' :
+                                syncStatus === 'syncing' ? '⟳ Syncing...' :
+                                    '✗ Offline'}
                         </span>
                     </div>
                     <div className="text-xs text-gray-500 mt-1 truncate">
@@ -361,9 +362,25 @@ const App: React.FC = () => {
 
             <div className="flex-1 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-200 flex items-center justify-center overflow-hidden p-8">
                 <div className="absolute top-4 right-4 bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs font-mono text-gray-500 border border-gray-300">
-                    {settings.position} ÔÇó Scale: {settings.scale}x
+                    {settings.position} • Scale: {settings.scale}x
                 </div>
                 <div className={`transition-all duration-300 ease-in-out`} style={{ transform: `scale(${settings.scale})`, opacity: settings.opacity }}>
+                    <KawaiiWidget
+                        settings={settings}
+                        donations={donations}
+                        isShaking={isShaking}
+                        isCelebration={isCelebration}
+                        showRoulette={showRoulette}
+                        onRouletteComplete={handleRouletteComplete}
+                        activeReward={activeReward}
+                        onRewardComplete={handleRewardComplete}
+                    />
+                </div>
+                <div className="absolute inset-0 pointer-events-none border-4 border-dashed border-black/5 opacity-20 m-4 rounded-3xl"></div>
+            </div>
+        </div>
+    );
 };
+//comentario
+export default App;
 
-                    export default App;
