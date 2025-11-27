@@ -9,8 +9,7 @@ const STORAGE_KEY_DONATIONS = 'kawaii-widget-donations';
 
 const App: React.FC = () => {
   
-  // --- INITIALIZATION HELPERS ---
-
+  // Helper to parse URL data
   const getUrlData = () => {
       const params = new URLSearchParams(window.location.search);
       const dataParam = params.get('data');
@@ -26,9 +25,50 @@ const App: React.FC = () => {
   };
 
   const urlData = getUrlData();
+
+  // Initialize settings
+  const [settings, setSettings] = useState<WidgetSettings>(() => {
+    // 1. Check URL Data
+    if (urlData) {
+        if (urlData.settings) return { ...DEFAULT_SETTINGS, ...urlData.settings };
+        if (urlData.theme) return { ...DEFAULT_SETTINGS, ...urlData };
+    }
+    // 2. Check LocalStorage
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+    } catch (e) { console.error(e); }
+
+    return DEFAULT_SETTINGS;
+  });
+
+  // Initialize Donations
+  const [donations, setDonations] = useState<Donation[]>(() => {
+      if (urlData && urlData.donations) return urlData.donations;
+      try {
+          const saved = localStorage.getItem(STORAGE_KEY_DONATIONS);
+          if (saved) return JSON.parse(saved);
+          // Default mock data
+          return [
+            { id: '1', username: 'NekoChan99', amount: 50, message: 'Keep it up!', timestamp: Date.now() },
+            { id: '2', username: 'MarioFan', amount: 20, message: 'Here we go!', timestamp: Date.now() - 10000 },
+            { id: '3', username: 'CyberPunk', amount: 100, message: 'Neon vibes only.', timestamp: Date.now() - 20000 },
+          ];
+      } catch (error) { return []; }
+  });
+
+  const [isShaking, setIsShaking] = useState(false);
+  const [isCelebration, setIsCelebration] = useState(false);
+  const [showRoulette, setShowRoulette] = useState(false);
+  const [activeReward, setActiveReward] = useState<TrailReward | null>(null);
+  const [socketStatus, setSocketStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [debouncedToken, setDebouncedToken] = useState(settings.streamElementsToken);
   const [isOverlayMode, setIsOverlayMode] = useState(false);
 
-  // Detect Overlay Mode
+  // Ref to track previous amount for triggering events on change
+  const prevAmountRef = useRef(settings.currentAmount);
+
+  // Check Overlay Mode
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('overlay') === 'true') {
@@ -37,163 +77,48 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // --- STATE MANAGEMENT ---
+  // Persistence
+  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }, [settings]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations)); }, [donations]);
 
-  // Settings State
-  const [settings, setSettings] = useState<WidgetSettings>(() => {
-    let finalSettings = { ...DEFAULT_SETTINGS };
-
-    // 1. URL Data (Design Priority)
-    if (urlData) {
-        if (urlData.settings) {
-            finalSettings = { ...finalSettings, ...urlData.settings };
-        } else if (urlData.theme) {
-            finalSettings = { ...finalSettings, ...urlData };
-        }
-    }
-
-    // 2. LocalStorage (Progress Persistence)
-    // We try to recover progress even in overlay mode if possible (same browser)
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            const parsedSaved = JSON.parse(saved);
-            
-            // Critical: If local storage has a newer 'currentAmount', use it.
-            // This acts as our "Simple Database"
-            if (parsedSaved.currentAmount !== undefined && !isNaN(Number(parsedSaved.currentAmount))) {
-                finalSettings.currentAmount = Number(parsedSaved.currentAmount);
-            }
-            // Also restore tokens if they exist locally but not in URL
-            if (parsedSaved.streamElementsToken) finalSettings.streamElementsToken = parsedSaved.streamElementsToken;
-            if (parsedSaved.livePixKey) finalSettings.livePixKey = parsedSaved.livePixKey;
-        }
-    } catch (e) { console.error(e); }
-
-    // Ensure numeric types
-    finalSettings.currentAmount = Number(finalSettings.currentAmount) || 0;
-    finalSettings.goalAmount = Number(finalSettings.goalAmount) || 100;
-
-    return finalSettings;
-  });
-
-  // Donations State
-  const [donations, setDonations] = useState<Donation[]>(() => {
-      // 1. Try LocalStorage (Our "Database")
-      try {
-          const saved = localStorage.getItem(STORAGE_KEY_DONATIONS);
-          if (saved) {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed)) return parsed;
-          }
-      } catch (e) { console.error(e); }
-
-      // 2. Fallback to URL (Snapshot)
-      if (urlData && urlData.donations && Array.isArray(urlData.donations)) {
-          return urlData.donations;
+  // Live URL Update in Overlay
+  useEffect(() => {
+      if (isOverlayMode) {
+          try {
+              const url = new URL(window.location.href);
+              const bundle = { settings, donations };
+              const encodedBundle = btoa(encodeURIComponent(JSON.stringify(bundle)));
+              url.searchParams.set('data', encodedBundle);
+              window.history.replaceState(null, '', url.toString());
+          } catch (e) { console.error(e); }
       }
+  }, [settings, donations, isOverlayMode]);
 
-      // 3. Defaults (Only for fresh editor)
-      const isOverlay = window.location.search.includes('overlay=true');
-      if (isOverlay) return [];
-
-      return [
-        { id: '1', username: 'NekoChan99', amount: 50, message: 'Keep it up!', timestamp: Date.now() },
-        { id: '2', username: 'MarioFan', amount: 20, message: 'Here we go!', timestamp: Date.now() - 10000 },
-        { id: '3', username: 'CyberPunk', amount: 100, message: 'Neon vibes only.', timestamp: Date.now() - 20000 },
-      ];
-  });
-
-  // Animation States
-  const [isShaking, setIsShaking] = useState(false);
-  const [isCelebration, setIsCelebration] = useState(false);
-  const [showRoulette, setShowRoulette] = useState(false);
-  const [activeReward, setActiveReward] = useState<TrailReward | null>(null);
-  const [socketStatus, setSocketStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
-  
-  // Debounce Token to prevent socket spam
-  const [debouncedToken, setDebouncedToken] = useState(settings.streamElementsToken);
-
-  // Ref to track previous amount for event triggering
-  const prevAmountRef = useRef(settings.currentAmount);
-
-  // --- PERSISTENCE EFFECT (The "Database" Logic) ---
-  // Whenever settings or donations change, we save to LocalStorage.
-  // This happens in BOTH Editor and Overlay (if possible) to keep them in sync on the same machine.
-  useEffect(() => {
-      const settingsToSave = { 
-          ...settings, 
-          currentAmount: Number(settings.currentAmount) 
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
-  }, [settings]);
-
-  useEffect(() => {
-      localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations));
-  }, [donations]);
-
-  // --- SYNC ACROSS TABS ---
-  // If the Editor updates, the Overlay updates automatically via Storage Events
+  // Sync across tabs/windows via LocalStorage
   useEffect(() => {
       const handleStorageChange = (e: StorageEvent) => {
           if (e.key === STORAGE_KEY && e.newValue) {
-              try { 
-                  const newSettings = JSON.parse(e.newValue);
-                  // We merge, respecting local state if needed, but here we trust the "Server" (Editor)
-                  setSettings(prev => ({ ...prev, ...newSettings })); 
-              } catch (e) { console.error(e); }
+              try { setSettings(JSON.parse(e.newValue)); } catch (e) { console.error(e); }
           }
           if (e.key === STORAGE_KEY_DONATIONS && e.newValue) {
-              try { 
-                  setDonations(JSON.parse(e.newValue)); 
-              } catch (e) { console.error(e); }
+              try { setDonations(JSON.parse(e.newValue)); } catch (e) { console.error(e); }
           }
       };
       window.addEventListener('storage', handleStorageChange);
       return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // --- CORE LOGIC: PROCESS NEW DONATION ---
-  // This function is the heart of the app. It runs in both Editor and Overlay independently.
-  const processNewDonation = useCallback((amountRaw: number | string, username: string, message: string) => {
-      const amount = parseFloat(String(amountRaw));
-      if (isNaN(amount) || amount <= 0) return;
-
-      console.log(`Processing Donation: ${username} - ${amount}`);
-
-      // 1. Update Donation History
-      const newDonation: Donation = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          username,
-          amount,
-          message,
-          timestamp: Date.now(),
-      };
-
-      setDonations(prev => {
-          const updated = [newDonation, ...prev].slice(0, 10);
-          return updated;
-      });
-
-      // 2. Update Goal Amount
-      setSettings(prev => {
-          const newTotal = Number(prev.currentAmount) + amount;
-          return { ...prev, currentAmount: newTotal };
-      });
-
-      // 3. Trigger Animations (Handled by the Effect below based on amount change)
-  }, []);
-
-  // --- EVENT TRIGGER EFFECT ---
-  // Watches for changes in currentAmount to fire visuals
+  // --- CENTRAL EVENT TRIGGER LOGIC ---
+  // This effect watches `settings.currentAmount` and fires animations if milestones are crossed.
+  // It works in both Editor and Overlay because `settings` is synced.
   useEffect(() => {
       const oldAmount = prevAmountRef.current;
       const newAmount = settings.currentAmount;
 
-      // Threshold to prevent tiny float jitter triggering events, ensuring it's a real increase
-      if (newAmount > oldAmount + 0.01) {
+      // Only trigger if amount INCREASED (don't trigger on reset or initial load if equal)
+      if (newAmount > oldAmount) {
           
-          // Roulette Logic
+          // 1. Roulette Logic
           let shouldTriggerRoulette = false;
           if (settings.enableRoulette) {
               if (settings.goalMode === GoalMode.SUBGOALS && settings.subGoalInterval > 0) {
@@ -201,6 +126,7 @@ const App: React.FC = () => {
                   const newMilestone = Math.floor(newAmount / settings.subGoalInterval);
                   if (newMilestone > oldMilestone) shouldTriggerRoulette = true;
               } else if (settings.goalMode === GoalMode.SIMPLE) {
+                  // Trigger only when goal is FIRST reached
                   if (newAmount >= settings.goalAmount && oldAmount < settings.goalAmount) {
                        shouldTriggerRoulette = true;
                   }
@@ -208,7 +134,7 @@ const App: React.FC = () => {
           }
           if (shouldTriggerRoulette) setTimeout(() => setShowRoulette(true), 800);
 
-          // Trail Rewards Logic
+          // 2. Trail Rewards Logic
           if (settings.trailRewards && settings.trailRewards.length > 0) {
               const crossedRewards = settings.trailRewards.filter(r => 
                   oldAmount < r.amount && newAmount >= r.amount
@@ -219,105 +145,71 @@ const App: React.FC = () => {
               }
           }
 
-          // Jackpot/Goal Celebration
+          // 3. Grand Celebration (Jackpot/Goal Reached)
           if (newAmount >= settings.goalAmount && oldAmount < settings.goalAmount) {
               setIsCelebration(true);
+              // Celebration lasts longer
               setTimeout(() => setIsCelebration(false), 10000); 
           }
           
-          // Shake
+          // 4. Shake Effect (Always on donation)
           setIsShaking(true);
           setTimeout(() => setIsShaking(false), 500);
       }
+
+      // Update ref for next change
       prevAmountRef.current = newAmount;
   }, [settings.currentAmount, settings.enableRoulette, settings.goalMode, settings.subGoalInterval, settings.goalAmount, settings.trailRewards]);
 
-  // --- SOCKET CONNECTION ---
-  // Debounce token update
+
+  // Socket Debounce
   useEffect(() => {
       const handler = setTimeout(() => setDebouncedToken(settings.streamElementsToken), 1000);
       return () => clearTimeout(handler);
   }, [settings.streamElementsToken]);
 
-  // Connect to Socket.IO
-  useEffect(() => {
-    const token = debouncedToken;
-    
-    // Safety check: if no token, disconnect
-    if (!token) {
-        setSocketStatus('disconnected');
-        return;
-    }
-
-    // Safety check: ensure io library is loaded
-    if (!(window as any).io) {
-        console.error("Socket.io library not loaded via CDN");
-        setSocketStatus('disconnected');
-        return;
-    }
-
-    setSocketStatus('connecting');
-    console.log("Attempting socket connection...");
-
-    const socket = (window as any).io('https://realtime.streamelements.com', { transports: ['websocket'] });
-
-    socket.on('connect', () => {
-        console.log("Socket Connected");
-        socket.emit('authenticate', { method: 'jwt', token });
-    });
-
-    socket.on('authenticated', () => {
-        console.log("Socket Authenticated");
-        setSocketStatus('connected');
-    });
-
-    socket.on('unauthorized', (data: any) => {
-        console.error("Socket Auth Failed", data);
-        setSocketStatus('disconnected');
-    });
-
-    socket.on('event', (data: any) => {
-        console.log("Socket Event Received:", data);
-        if (data.type === 'tip') {
-            processNewDonation(data.data.amount, data.data.username, data.data.message || '');
-        }
-    });
-
-    socket.on('disconnect', () => {
-        console.log("Socket Disconnected");
-        setSocketStatus('disconnected');
-    });
-
-    return () => {
-        socket.disconnect();
-    };
-  }, [debouncedToken, processNewDonation]);
-
-  // --- NATIVE LISTENER (For Browser Source Interactivity) ---
-  useEffect(() => {
-      const handleNativeEvent = (event: any) => {
-          if (!event.detail || !event.detail.listener) return;
-          const { listener, event: data } = event.detail;
-          
-          if (listener === 'tip-latest' || listener === 'tip') {
-              console.log("Native Event Received:", data);
-              processNewDonation(data.amount, data.name || data.username, data.message || '');
-          }
-      };
-
-      window.addEventListener('onEventReceived', handleNativeEvent);
-      return () => window.removeEventListener('onEventReceived', handleNativeEvent);
-  }, [processNewDonation]);
-
-
-  // --- UI HELPERS ---
-
+  // Reset Handler
   const handleFullReset = () => {
-      if (window.confirm("Are you sure? This will reset the Current Amount to 0.")) {
+      if (window.confirm("Are you sure? This will reset the Current Amount to 0 and clear the Donation History.")) {
           setSettings(prev => ({ ...prev, currentAmount: 0 }));
           setDonations([]);
       }
   };
+
+  // Add Donation (Update State Only - Logic is handled by Effect above)
+  const simulateDonation = useCallback((amount: number, username: string, message: string) => {
+    const newDonation: Donation = {
+      id: Date.now().toString(),
+      username,
+      amount,
+      message,
+      timestamp: Date.now(),
+    };
+
+    setDonations(prev => [newDonation, ...prev].slice(0, 10));
+    setSettings(prev => ({ ...prev, currentAmount: prev.currentAmount + amount }));
+  }, []);
+
+  // --- Socket Logic ---
+  useEffect(() => {
+    const token = debouncedToken;
+    if (!token || !(window as any).io) {
+        setSocketStatus('disconnected');
+        return;
+    }
+    setSocketStatus('connecting');
+    const socket = (window as any).io('https://realtime.streamelements.com', { transports: ['websocket'] });
+
+    socket.on('connect', () => socket.emit('authenticate', { method: 'jwt', token }));
+    socket.on('authenticated', () => setSocketStatus('connected'));
+    socket.on('unauthorized', () => setSocketStatus('disconnected'));
+    socket.on('event', (data: any) => {
+        if (data.type === 'tip') simulateDonation(data.data.amount, data.data.username, data.data.message || '');
+    });
+    socket.on('disconnect', () => setSocketStatus('disconnected'));
+
+    return () => socket.disconnect();
+  }, [debouncedToken, simulateDonation]);
 
   const getPositionClasses = (pos: WidgetPosition) => {
     switch (pos) {
@@ -332,25 +224,16 @@ const App: React.FC = () => {
   };
 
   const handleLaunchOverlay = () => {
-      // 1. Save "Database" (LocalStorage)
-      const settingsToSave = { ...settings, currentAmount: Number(settings.currentAmount) };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
       localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations));
-      
       const url = new URL(window.location.href);
       url.searchParams.set('overlay', 'true');
-      
       try {
-          // 2. Create URL Bundle (Design + Backup Data)
-          // We include everything in the URL as a backup/snapshot
-          const bundle = { settings: settingsToSave, donations };
+          const bundle = { settings, donations };
           url.searchParams.set('data', btoa(encodeURIComponent(JSON.stringify(bundle))));
       } catch (e) { console.error(e); }
-      
       window.open(url.toString(), '_blank');
   };
-
-  // --- RENDER ---
 
   if (isOverlayMode) {
       return (
@@ -385,7 +268,7 @@ const App: React.FC = () => {
             <SettingsPanel 
                 settings={settings} 
                 setSettings={setSettings} 
-                onSimulateDonation={processNewDonation}
+                onSimulateDonation={simulateDonation}
                 socketStatus={socketStatus}
                 onFullReset={handleFullReset}
             />
