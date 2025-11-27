@@ -63,15 +63,20 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({ theme, events, onC
         let autoCloseTimer: ReturnType<typeof setTimeout>;
 
         if (winner) {
+            console.log('[ROULETTE] Winner detected, setting 5s auto-close timer:', winner);
             // Set a timer to close automatically after 5 seconds
             autoCloseTimer = setTimeout(() => {
+                console.log('[ROULETTE] Auto-close timer fired, calling onComplete');
                 onComplete();
             }, 5000);
         }
 
         // Cleanup timer if component unmounts or user closes manually
         return () => {
-            if (autoCloseTimer) clearTimeout(autoCloseTimer);
+            if (autoCloseTimer) {
+                console.log('[ROULETTE] Cleaning up auto-close timer');
+                clearTimeout(autoCloseTimer);
+            }
         };
     }, [winner, onComplete]);
 
@@ -88,7 +93,7 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({ theme, events, onC
                     </div>
 
                     {/* Visual Countdown Timer */}
-                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-3 mb-3">
+                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-3">
                         <div
                             className="bg-yellow-400 h-full origin-left"
                             style={{
@@ -104,13 +109,6 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({ theme, events, onC
                             `}</style>
                         </div>
                     </div>
-
-                    <button
-                        onClick={onComplete}
-                        className="px-6 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-bold text-gray-600 transition-colors"
-                    >
-                        Close Now
-                    </button>
                 </div>
             ) : (
                 // The Wheel
