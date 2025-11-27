@@ -48,22 +48,27 @@ const App: React.FC = () => {
         if (saved) {
             const parsedSaved = JSON.parse(saved);
             
-            // If URL data exists, we merge it, BUT we let LocalStorage override the 'Progress' fields
-            // This ensures that if the stream crashes, we resume from the last saved amount, not the URL amount
+            // Ensure numbers are numbers
+            if (parsedSaved.currentAmount) parsedSaved.currentAmount = Number(parsedSaved.currentAmount);
+            if (parsedSaved.goalAmount) parsedSaved.goalAmount = Number(parsedSaved.goalAmount);
+
             if (hasUrlData) {
                 finalSettings = {
                     ...finalSettings, // Start with URL styles
-                    // Override specific progress fields from LocalStorage
-                    currentAmount: parsedSaved.currentAmount !== undefined ? parsedSaved.currentAmount : finalSettings.currentAmount,
-                    // We might also want to persist goalAmount changes if made locally
-                    goalAmount: parsedSaved.goalAmount !== undefined ? parsedSaved.goalAmount : finalSettings.goalAmount,
+                    // OVERRIDE: Progress must always come from LocalStorage if it exists
+                    // This prevents the URL (which is a snapshot in time) from resetting the progress
+                    currentAmount: (parsedSaved.currentAmount !== undefined && !isNaN(parsedSaved.currentAmount)) 
+                        ? parsedSaved.currentAmount 
+                        : finalSettings.currentAmount,
+                        
+                    // Optional: You can uncomment this if you want Goal Amount to also persist from browser adjustments
+                    // goalAmount: parsedSaved.goalAmount || finalSettings.goalAmount
                 };
             } else {
-                // If no URL data, LocalStorage is the complete source of truth
                 finalSettings = { ...finalSettings, ...parsedSaved };
             }
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Error loading settings from local storage", e); }
 
     return finalSettings;
   });
@@ -71,7 +76,6 @@ const App: React.FC = () => {
   // Initialize Donations (Prioritize LocalStorage for history)
   const [donations, setDonations] = useState<Donation[]>(() => {
       // 1. LocalStorage (PRIMARY SOURCE)
-      // We check this FIRST because recent donations live here, while URL has old snapshots
       try {
           const saved = localStorage.getItem(STORAGE_KEY_DONATIONS);
           if (saved) return JSON.parse(saved);
@@ -112,21 +116,18 @@ const App: React.FC = () => {
   }, []);
 
   // Persistence to LocalStorage (Always runs, keeps browser source synced)
-  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }, [settings]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations)); }, [donations]);
-
-  // Live URL Update in Overlay (For sharing/refreshing same state manually)
-  useEffect(() => {
-      if (isOverlayMode) {
-          try {
-              const url = new URL(window.location.href);
-              const bundle = { settings, donations };
-              const encodedBundle = btoa(encodeURIComponent(JSON.stringify(bundle)));
-              url.searchParams.set('data', encodedBundle);
-              window.history.replaceState(null, '', url.toString());
-          } catch (e) { console.error(e); }
-      }
-  }, [settings, donations, isOverlayMode]);
+  useEffect(() => { 
+      // Ensure we are saving a number, not a string
+      const settingsToSave = {
+          ...settings,
+          currentAmount: Number(settings.currentAmount)
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave)); 
+  }, [settings]);
+  
+  useEffect(() => { 
+      localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations)); 
+  }, [donations]);
 
   // Sync across tabs/windows via LocalStorage Events
   useEffect(() => {
@@ -203,7 +204,13 @@ const App: React.FC = () => {
   };
 
   // Add Donation Logic (Updates State -> Triggers Effect -> Saves to LS)
-  const simulateDonation = useCallback((amount: number, username: string, message: string) => {
+  const simulateDonation = useCallback((amountRaw: number | string, username: string, message: string) => {
+    // SECURITY: Ensure amount is treated as a number to prevent string concatenation bugs
+    // e.g. "100" + "50" = "10050" (BAD) -> 100 + 50 = 150 (GOOD)
+    const amount = parseFloat(String(amountRaw));
+    
+    if (isNaN(amount)) return;
+
     const newDonation: Donation = {
       id: Date.now().toString(),
       username,
@@ -213,27 +220,25 @@ const App: React.FC = () => {
     };
 
     setDonations(prev => [newDonation, ...prev].slice(0, 10));
-    setSettings(prev => ({ ...prev, currentAmount: prev.currentAmount + amount }));
+    setSettings(prev => ({ ...prev, currentAmount: Number(prev.currentAmount) + amount }));
   }, []);
 
-  // --- NATIVE STREAMELEMENTS EVENT LISTENER (Important for Custom Widget / LivePix) ---
+  // --- NATIVE STREAMELEMENTS EVENT LISTENER ---
   useEffect(() => {
       const handleNativeEvent = (event: any) => {
           if (!event.detail || !event.detail.listener) return;
           const { listener, event: data } = event.detail;
           
-          // StreamElements Tip Event
           if (listener === 'tip-latest' || listener === 'tip') {
               simulateDonation(data.amount, data.name || data.username, data.message || '');
           }
-          // Support for other tip types if needed (cheer, etc can be added here)
       };
 
       window.addEventListener('onEventReceived', handleNativeEvent);
       return () => window.removeEventListener('onEventReceived', handleNativeEvent);
   }, [simulateDonation]);
 
-  // --- SOCKET.IO CONNECTION (For Overlay hosted outside SE) ---
+  // --- SOCKET.IO CONNECTION ---
   useEffect(() => {
     const token = debouncedToken;
     if (!token || !(window as any).io) {
@@ -267,12 +272,15 @@ const App: React.FC = () => {
   };
 
   const handleLaunchOverlay = () => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      // Force save current state before opening
+      const settingsToSave = { ...settings, currentAmount: Number(settings.currentAmount) };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
       localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations));
+      
       const url = new URL(window.location.href);
       url.searchParams.set('overlay', 'true');
       try {
-          const bundle = { settings, donations };
+          const bundle = { settings: settingsToSave, donations };
           url.searchParams.set('data', btoa(encodeURIComponent(JSON.stringify(bundle))));
       } catch (e) { console.error(e); }
       window.open(url.toString(), '_blank');
