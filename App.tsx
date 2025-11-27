@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { WidgetSettings, DEFAULT_SETTINGS, Donation, ThemeMode, WidgetPosition, GoalMode, StreamElementsEvent, TrailReward } from './types';
 import { KawaiiWidget } from './components/KawaiiWidget';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -237,132 +237,133 @@ const App: React.FC = () => {
         setSettings(prev => ({ ...prev, currentAmount: prev.currentAmount + amount }));
     }, []);
 
-    // Memoized roulette complete handler to prevent infinite loop
-}
-setSocketStatus('connecting');
-const socket = (window as any).io('https://realtime.streamelements.com', { transports: ['websocket'] });
+    // Memoized callback handlers to prevent infinite loop in RouletteWheel useEffect
+    const handleRouletteComplete = useCallback(() => {
+        console.log('[APP] Roulette complete, closing...');
+        setShowRoulette(false);
+    }, []);
 
-socket.on('connect', () => socket.emit('authenticate', { method: 'jwt', token }));
-socket.on('authenticated', () => setSocketStatus('connected'));
-socket.on('unauthorized', () => setSocketStatus('disconnected'));
-socket.on('event', (data: any) => {
-    if (data.type === 'tip') simulateDonation(data.data.amount, data.data.username, data.data.message || '');
-});
-socket.on('disconnect', () => setSocketStatus('disconnected'));
+    const handleRewardComplete = useCallback(() => {
+        console.log('[APP] Reward complete, closing...');
+        setActiveReward(null);
+    }, []);
 
-return () => socket.disconnect();
+    // --- Socket Logic ---
+    useEffect(() => {
+        const token = debouncedToken;
+        if (!token || !(window as any).io) {
+            setSocketStatus('disconnected');
+            return;
+        }
+        setSocketStatus('connecting');
+        const socket = (window as any).io('https://realtime.streamelements.com', { transports: ['websocket'] });
+
+        socket.on('connect', () => socket.emit('authenticate', { method: 'jwt', token }));
+        socket.on('authenticated', () => setSocketStatus('connected'));
+        socket.on('unauthorized', () => setSocketStatus('disconnected'));
+        socket.on('event', (data: any) => {
+            if (data.type === 'tip') simulateDonation(data.data.amount, data.data.username, data.data.message || '');
+        });
+        socket.on('disconnect', () => setSocketStatus('disconnected'));
+
+        return () => socket.disconnect();
     }, [debouncedToken, simulateDonation]);
 
-const getPositionClasses = (pos: WidgetPosition) => {
-    switch (pos) {
-        case WidgetPosition.TOP_LEFT: return 'top-0 left-0 m-8 origin-top-left';
-        case WidgetPosition.TOP_RIGHT: return 'top-0 right-0 m-8 origin-top-right';
-        case WidgetPosition.BOTTOM_LEFT: return 'bottom-0 left-0 m-8 origin-bottom-left';
-        case WidgetPosition.BOTTOM_RIGHT: return 'bottom-0 right-0 m-8 origin-bottom-right';
-        case WidgetPosition.CENTER_TOP: return 'top-0 left-1/2 -translate-x-1/2 mt-8 origin-top';
-        case WidgetPosition.CENTER_BOTTOM: return 'bottom-0 left-1/2 -translate-x-1/2 mb-8 origin-bottom';
-        default: return 'bottom-0 left-1/2 -translate-x-1/2 mb-8 origin-bottom';
+    const getPositionClasses = (pos: WidgetPosition) => {
+        switch (pos) {
+            case WidgetPosition.TOP_LEFT: return 'top-0 left-0 m-8 origin-top-left';
+            case WidgetPosition.TOP_RIGHT: return 'top-0 right-0 m-8 origin-top-right';
+            case WidgetPosition.BOTTOM_LEFT: return 'bottom-0 left-0 m-8 origin-bottom-left';
+            case WidgetPosition.BOTTOM_RIGHT: return 'bottom-0 right-0 m-8 origin-bottom-right';
+            case WidgetPosition.CENTER_TOP: return 'top-0 left-1/2 -translate-x-1/2 mt-8 origin-top';
+            case WidgetPosition.CENTER_BOTTOM: return 'bottom-0 left-1/2 -translate-x-1/2 mb-8 origin-bottom';
+            default: return 'bottom-0 left-1/2 -translate-x-1/2 mb-8 origin-bottom';
+        }
+    };
+
+    const handleLaunchOverlay = async () => {
+        if (!sessionId) return;
+
+        // Ensure data is synced before opening overlay
+        try {
+            await syncToBackend(sessionId, settings, donations);
+        } catch (e) {
+            console.error('Failed to sync before opening overlay:', e);
+        }
+
+        const url = new URL(window.location.href);
+        url.searchParams.set('overlay', 'true');
+        url.searchParams.set('sessionId', sessionId);
+        window.open(url.toString(), '_blank');
+    };
+
+    if (isOverlayMode) {
+        return (
+            <div className="min-h-screen w-full overflow-hidden relative bg-transparent">
+                <div
+                    className={`absolute ${getPositionClasses(settings.position)} transition-all duration-300`}
+                    style={{ transform: `scale(${settings.scale})`, opacity: settings.opacity }}
+                >
+                    <KawaiiWidget
+                        settings={settings}
+                        donations={donations}
+                        isShaking={isShaking}
+                        isCelebration={isCelebration}
+                        showRoulette={showRoulette}
+                        onRouletteComplete={handleRouletteComplete}
+                        activeReward={activeReward}
+                        onRewardComplete={handleRewardComplete}
+                    />
+                </div>
+            </div>
+        );
     }
-};
 
-const handleLaunchOverlay = async () => {
-    if (!sessionId) return;
-
-    // Ensure data is synced before opening overlay
-    try {
-        await syncToBackend(sessionId, settings, donations);
-    } catch (e) {
-        console.error('Failed to sync before opening overlay:', e);
-    }
-
-    const url = new URL(window.location.href);
-    url.searchParams.set('overlay', 'true');
-    url.searchParams.set('sessionId', sessionId);
-    window.open(url.toString(), '_blank');
-};
-
-if (isOverlayMode) {
     return (
-        <div className="min-h-screen w-full overflow-hidden relative bg-transparent">
-            <div
-                className={`absolute ${getPositionClasses(settings.position)} transition-all duration-300`}
-                style={{ transform: `scale(${settings.scale})`, opacity: settings.opacity }}
-            >
-                <KawaiiWidget
-                    settings={settings}
-                    donations={donations}
-                    isShaking={isShaking}
-                    isCelebration={isCelebration}
-                    showRoulette={showRoulette}
-                    onRouletteComplete={() => setShowRoulette(false)}
-                    activeReward={activeReward}
-                    onRewardComplete={() => setActiveReward(null)}
-                />
-            </div>
-        </div>
-    );
-}
-
-return (
-    <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row overflow-hidden font-sans text-gray-800">
-        <div className="w-full md:w-1/3 lg:w-1/4 bg-white shadow-xl z-20 flex flex-col h-screen border-r border-gray-200">
-            <div className="p-6 bg-indigo-600 text-white shadow-md">
-                <h1 className="text-2xl font-bold flex items-center gap-2"><Monitor size={24} /> Widget Studio</h1>
-                <p className="text-xs text-indigo-200 mt-1 opacity-80">Configure your stream overlay</p>
-            </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <SettingsPanel
-                    settings={settings}
-                    setSettings={setSettings}
-                    onSimulateDonation={simulateDonation}
-                    socketStatus={socketStatus}
-                    onFullReset={handleFullReset}
-                />
-            </div>
-            <div className="px-4 py-2 bg-gray-100 border-t border-gray-200">
-                <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600">Sync Status:</span>
-                    <span className={`font-semibold ${syncStatus === 'synced' ? 'text-green-600' :
-                        syncStatus === 'syncing' ? 'text-yellow-600' :
-                            'text-red-600'
-                        }`}>
-                        {syncStatus === 'synced' ? '✓ Synced' :
-                            syncStatus === 'syncing' ? '⟳ Syncing...' :
-                                '✗ Offline'}
-                    </span>
+        <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row overflow-hidden font-sans text-gray-800">
+            <div className="w-full md:w-1/3 lg:w-1/4 bg-white shadow-xl z-20 flex flex-col h-screen border-r border-gray-200">
+                <div className="p-6 bg-indigo-600 text-white shadow-md">
+                    <h1 className="text-2xl font-bold flex items-center gap-2"><Monitor size={24} /> Widget Studio</h1>
+                    <p className="text-xs text-indigo-200 mt-1 opacity-80">Configure your stream overlay</p>
                 </div>
-                <div className="text-xs text-gray-500 mt-1 truncate">
-                    Session: {sessionId.substring(0, 20)}...
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <SettingsPanel
+                        settings={settings}
+                        setSettings={setSettings}
+                        onSimulateDonation={simulateDonation}
+                        socketStatus={socketStatus}
+                        onFullReset={handleFullReset}
+                    />
+                </div>
+                <div className="px-4 py-2 bg-gray-100 border-t border-gray-200">
+                    <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-600">Sync Status:</span>
+                        <span className={`font-semibold ${syncStatus === 'synced' ? 'text-green-600' :
+                            syncStatus === 'syncing' ? 'text-yellow-600' :
+                                'text-red-600'
+                            }`}>
+                            {syncStatus === 'synced' ? 'Ô£ô Synced' :
+                                syncStatus === 'syncing' ? 'Ôƒ│ Syncing...' :
+                                    'Ô£ù Offline'}
+                        </span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1 truncate">
+                        Session: {sessionId.substring(0, 20)}...
+                    </div>
+                </div>
+                <div className="p-4 bg-gray-50 border-t border-gray-200">
+                    <button onClick={handleLaunchOverlay} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-md">
+                        <ExternalLink size={18} /> Save & Open Overlay
+                    </button>
+                    <p className="text-xs text-center text-gray-400 mt-2">Opens a transparent window for OBS</p>
                 </div>
             </div>
-            <div className="p-4 bg-gray-50 border-t border-gray-200">
-                <button onClick={handleLaunchOverlay} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-md">
-                    <ExternalLink size={18} /> Save & Open Overlay
-                </button>
-                <p className="text-xs text-center text-gray-400 mt-2">Opens a transparent window for OBS</p>
-            </div>
-        </div>
 
-        <div className="flex-1 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-200 flex items-center justify-center overflow-hidden p-8">
-            <div className="absolute top-4 right-4 bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs font-mono text-gray-500 border border-gray-300">
-                {settings.position} • Scale: {settings.scale}x
-            </div>
-            <div className={`transition-all duration-300 ease-in-out`} style={{ transform: `scale(${settings.scale})`, opacity: settings.opacity }}>
-                <KawaiiWidget
-                    settings={settings}
-                    donations={donations}
-                    isShaking={isShaking}
-                    isCelebration={isCelebration}
-                    showRoulette={showRoulette}
-                    onRouletteComplete={() => setShowRoulette(false)}
-                    activeReward={activeReward}
-                    onRewardComplete={() => setActiveReward(null)}
-                />
-            </div>
-            <div className="absolute inset-0 pointer-events-none border-4 border-dashed border-black/5 opacity-20 m-4 rounded-3xl"></div>
-        </div>
-    </div>
-);
+            <div className="flex-1 relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-200 flex items-center justify-center overflow-hidden p-8">
+                <div className="absolute top-4 right-4 bg-white/80 backdrop-blur px-3 py-1 rounded-full text-xs font-mono text-gray-500 border border-gray-300">
+                    {settings.position} ÔÇó Scale: {settings.scale}x
+                </div>
+                <div className={`transition-all duration-300 ease-in-out`} style={{ transform: `scale(${settings.scale})`, opacity: settings.opacity }}>
 };
 
-export default App;
+                    export default App;
