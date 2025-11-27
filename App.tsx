@@ -27,25 +27,19 @@ const App: React.FC = () => {
   const urlData = getUrlData();
 
   // Initialize settings with STRICT PRIORITY Logic
-  // URL = Source of Design (Colors, Title, Fonts, Goal Target)
-  // LocalStorage = Source of Progress (Current Amount)
   const [settings, setSettings] = useState<WidgetSettings>(() => {
-    // 1. Start with Defaults
     let baseSettings = { ...DEFAULT_SETTINGS };
 
-    // 2. Apply URL Config (Design & Static settings)
+    // 1. Apply URL Config (Design & Static settings)
     if (urlData) {
         if (urlData.settings) {
             baseSettings = { ...baseSettings, ...urlData.settings };
         } else if (urlData.theme) {
-            // Support legacy format
             baseSettings = { ...baseSettings, ...urlData };
         }
     }
 
-    // 3. Apply LocalStorage (Progress persistence)
-    // This step is CRITICAL: We overwrite 'currentAmount' from the local save
-    // ignoring whatever 'currentAmount' is in the static URL.
+    // 2. Apply LocalStorage (Progress persistence)
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
@@ -53,33 +47,31 @@ const App: React.FC = () => {
             
             // Check if we have valid progress data locally
             if (localData.currentAmount !== undefined && !isNaN(Number(localData.currentAmount))) {
-                console.log("Restoring progress from LocalStorage:", localData.currentAmount);
                 baseSettings.currentAmount = Number(localData.currentAmount);
             }
-            
-            // We usually want to trust the URL for the Goal Amount (so user can update target in editor),
-            // but we trust LocalStorage for the Current Amount (so donations persist).
         }
     } catch (e) { console.error("Error loading settings from local storage", e); }
 
     return baseSettings;
   });
 
-  // Initialize Donations (Strict Priority: LocalStorage > URL > Default)
+  // Initialize Donations (STRICT PRIORITY: LocalStorage > URL > Default)
   const [donations, setDonations] = useState<Donation[]>(() => {
       // 1. Try LocalStorage (The absolute truth for history)
       try {
           const saved = localStorage.getItem(STORAGE_KEY_DONATIONS);
           if (saved) {
               const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed) && parsed.length > 0) {
+              // CRITICAL FIX: Accept empty arrays too! 
+              // If user cleared history, we must respect that and NOT fall back to URL.
+              if (Array.isArray(parsed)) {
                   return parsed;
               }
           }
       } catch (error) { console.error(error); }
 
-      // 2. Fallback to URL Data (Snapshot)
-      if (urlData && urlData.donations && urlData.donations.length > 0) {
+      // 2. Fallback to URL Data (Snapshot) - Only if LocalStorage was missing/invalid
+      if (urlData && urlData.donations && Array.isArray(urlData.donations)) {
           return urlData.donations;
       }
 
@@ -116,15 +108,18 @@ const App: React.FC = () => {
 
   // Persistence to LocalStorage (Always runs on every change)
   useEffect(() => { 
-      // Important: Save the *current* state to local storage so it survives refresh
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); 
+      const settingsToSave = {
+          ...settings,
+          currentAmount: Number(settings.currentAmount)
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave)); 
   }, [settings]);
   
   useEffect(() => { 
       localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations)); 
   }, [donations]);
 
-  // Live URL Update (Optional UX for manual refresh, doesn't affect OBS static source)
+  // Live URL Update (Optional UX for manual refresh)
   useEffect(() => {
       if (isOverlayMode) {
           try {
@@ -203,10 +198,9 @@ const App: React.FC = () => {
       return () => clearTimeout(handler);
   }, [settings.streamElementsToken]);
 
-  // Reset Handler (Danger Zone)
+  // Reset Handler
   const handleFullReset = () => {
       if (window.confirm("Are you sure? This will reset the Current Amount to 0 and clear the Donation History.")) {
-          // We update state, which triggers useEffect, which updates LocalStorage
           setSettings(prev => ({ ...prev, currentAmount: 0 }));
           setDonations([]);
       }
@@ -279,7 +273,6 @@ const App: React.FC = () => {
   };
 
   const handleLaunchOverlay = () => {
-      // Force save current state before opening
       const settingsToSave = { ...settings, currentAmount: Number(settings.currentAmount) };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
       localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations));
