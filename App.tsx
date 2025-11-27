@@ -328,8 +328,8 @@ const App: React.FC = () => {
                     <div className="flex items-center justify-between text-xs">
                         <span className="text-gray-600">Sync Status:</span>
                         <span className={`font-semibold ${syncStatus === 'synced' ? 'text-green-600' :
-                            syncStatus === 'syncing' ? 'text-yellow-600' :
-                                'text-red-600'
+                                syncStatus === 'syncing' ? 'text-yellow-600' :
+                                    'text-red-600'
                             }`}>
                             {syncStatus === 'synced' ? '✓ Synced' :
                                 syncStatus === 'syncing' ? '⟳ Syncing...' :
