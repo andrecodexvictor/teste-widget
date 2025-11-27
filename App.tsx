@@ -26,35 +26,66 @@ const App: React.FC = () => {
 
   const urlData = getUrlData();
 
-  // Initialize settings
+  // Initialize settings with Smart Merge
+  // We want Visual Settings from URL (if updated) but Progress from LocalStorage (persistence)
   const [settings, setSettings] = useState<WidgetSettings>(() => {
-    // 1. Check URL Data
+    let finalSettings = { ...DEFAULT_SETTINGS };
+    let hasUrlData = false;
+
+    // 1. Load from URL (Base Config)
     if (urlData) {
-        if (urlData.settings) return { ...DEFAULT_SETTINGS, ...urlData.settings };
-        if (urlData.theme) return { ...DEFAULT_SETTINGS, ...urlData };
+        if (urlData.settings) {
+            finalSettings = { ...finalSettings, ...urlData.settings };
+            hasUrlData = true;
+        } else if (urlData.theme) {
+            finalSettings = { ...finalSettings, ...urlData };
+            hasUrlData = true;
+        }
     }
-    // 2. Check LocalStorage
+
+    // 2. Load from LocalStorage (Persisted Progress)
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
+        if (saved) {
+            const parsedSaved = JSON.parse(saved);
+            
+            // If we have URL data (user is configuring/embedding), we prioritize URL styles
+            // BUT we prioritize LocalStorage for "Progress" data (currentAmount, etc)
+            if (hasUrlData) {
+                finalSettings = {
+                    ...finalSettings, // Start with URL Config
+                    currentAmount: parsedSaved.currentAmount, // Restore Progress
+                    // We might want to keep other local settings if they match the "Session"
+                };
+            } else {
+                // If no URL data, LocalStorage is king
+                finalSettings = { ...finalSettings, ...parsedSaved };
+            }
+        }
     } catch (e) { console.error(e); }
 
-    return DEFAULT_SETTINGS;
+    return finalSettings;
   });
 
-  // Initialize Donations
+  // Initialize Donations (Prioritize LocalStorage for history)
   const [donations, setDonations] = useState<Donation[]>(() => {
-      if (urlData && urlData.donations) return urlData.donations;
       try {
           const saved = localStorage.getItem(STORAGE_KEY_DONATIONS);
           if (saved) return JSON.parse(saved);
-          // Default mock data
-          return [
-            { id: '1', username: 'NekoChan99', amount: 50, message: 'Keep it up!', timestamp: Date.now() },
-            { id: '2', username: 'MarioFan', amount: 20, message: 'Here we go!', timestamp: Date.now() - 10000 },
-            { id: '3', username: 'CyberPunk', amount: 100, message: 'Neon vibes only.', timestamp: Date.now() - 20000 },
-          ];
-      } catch (error) { return []; }
+      } catch (error) { console.error(error); }
+
+      // Fallback to URL data if no local history
+      if (urlData && urlData.donations) return urlData.donations;
+
+      // Default mock data only for first-time editor view
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('overlay') === 'true') return []; // Empty for fresh overlay
+
+      return [
+        { id: '1', username: 'NekoChan99', amount: 50, message: 'Keep it up!', timestamp: Date.now() },
+        { id: '2', username: 'MarioFan', amount: 20, message: 'Here we go!', timestamp: Date.now() - 10000 },
+        { id: '3', username: 'CyberPunk', amount: 100, message: 'Neon vibes only.', timestamp: Date.now() - 20000 },
+      ];
   });
 
   const [isShaking, setIsShaking] = useState(false);
@@ -77,11 +108,11 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Persistence
+  // Persistence to LocalStorage (Always runs, keeps browser source synced)
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }, [settings]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_DONATIONS, JSON.stringify(donations)); }, [donations]);
 
-  // Live URL Update in Overlay
+  // Live URL Update in Overlay (For sharing/refreshing same state manually)
   useEffect(() => {
       if (isOverlayMode) {
           try {
@@ -94,7 +125,7 @@ const App: React.FC = () => {
       }
   }, [settings, donations, isOverlayMode]);
 
-  // Sync across tabs/windows via LocalStorage
+  // Sync across tabs/windows via LocalStorage Events
   useEffect(() => {
       const handleStorageChange = (e: StorageEvent) => {
           if (e.key === STORAGE_KEY && e.newValue) {
@@ -109,15 +140,11 @@ const App: React.FC = () => {
   }, []);
 
   // --- CENTRAL EVENT TRIGGER LOGIC ---
-  // This effect watches `settings.currentAmount` and fires animations if milestones are crossed.
-  // It works in both Editor and Overlay because `settings` is synced.
   useEffect(() => {
       const oldAmount = prevAmountRef.current;
       const newAmount = settings.currentAmount;
 
-      // Only trigger if amount INCREASED (don't trigger on reset or initial load if equal)
       if (newAmount > oldAmount) {
-          
           // 1. Roulette Logic
           let shouldTriggerRoulette = false;
           if (settings.enableRoulette) {
@@ -126,7 +153,6 @@ const App: React.FC = () => {
                   const newMilestone = Math.floor(newAmount / settings.subGoalInterval);
                   if (newMilestone > oldMilestone) shouldTriggerRoulette = true;
               } else if (settings.goalMode === GoalMode.SIMPLE) {
-                  // Trigger only when goal is FIRST reached
                   if (newAmount >= settings.goalAmount && oldAmount < settings.goalAmount) {
                        shouldTriggerRoulette = true;
                   }
@@ -145,19 +171,16 @@ const App: React.FC = () => {
               }
           }
 
-          // 3. Grand Celebration (Jackpot/Goal Reached)
+          // 3. Grand Celebration
           if (newAmount >= settings.goalAmount && oldAmount < settings.goalAmount) {
               setIsCelebration(true);
-              // Celebration lasts longer
               setTimeout(() => setIsCelebration(false), 10000); 
           }
           
-          // 4. Shake Effect (Always on donation)
+          // 4. Shake
           setIsShaking(true);
           setTimeout(() => setIsShaking(false), 500);
       }
-
-      // Update ref for next change
       prevAmountRef.current = newAmount;
   }, [settings.currentAmount, settings.enableRoulette, settings.goalMode, settings.subGoalInterval, settings.goalAmount, settings.trailRewards]);
 
@@ -176,7 +199,7 @@ const App: React.FC = () => {
       }
   };
 
-  // Add Donation (Update State Only - Logic is handled by Effect above)
+  // Add Donation Logic (Updates State -> Triggers Effect -> Saves to LS)
   const simulateDonation = useCallback((amount: number, username: string, message: string) => {
     const newDonation: Donation = {
       id: Date.now().toString(),
@@ -190,7 +213,24 @@ const App: React.FC = () => {
     setSettings(prev => ({ ...prev, currentAmount: prev.currentAmount + amount }));
   }, []);
 
-  // --- Socket Logic ---
+  // --- NATIVE STREAMELEMENTS EVENT LISTENER (Important for Custom Widget / LivePix) ---
+  useEffect(() => {
+      const handleNativeEvent = (event: any) => {
+          if (!event.detail || !event.detail.listener) return;
+          const { listener, event: data } = event.detail;
+          
+          // StreamElements Tip Event
+          if (listener === 'tip-latest' || listener === 'tip') {
+              simulateDonation(data.amount, data.name || data.username, data.message || '');
+          }
+          // Support for other tip types if needed (cheer, etc can be added here)
+      };
+
+      window.addEventListener('onEventReceived', handleNativeEvent);
+      return () => window.removeEventListener('onEventReceived', handleNativeEvent);
+  }, [simulateDonation]);
+
+  // --- SOCKET.IO CONNECTION (For Overlay hosted outside SE) ---
   useEffect(() => {
     const token = debouncedToken;
     if (!token || !(window as any).io) {
