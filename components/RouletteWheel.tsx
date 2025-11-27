@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { ThemeMode } from '../types';
-import { Trophy, X } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 
 interface RouletteWheelProps {
     theme: ThemeMode;
@@ -52,56 +52,111 @@ export const RouletteWheel: React.FC<RouletteWheelProps> = ({ theme, events, onC
                 setIsSpinning(false);
             }, 4000); // Duration matches CSS transition
         };
-        // Winner Display
-        <div className="text-center animate-bounce p-4 bg-white rounded-xl border-4 border-yellow-400 shadow-2xl transform scale-110 relative w-64">
-        </button>
-        </div >
-            ) : (
-    // The Wheel
-    <div className="relative w-64 h-64">
-        {/* Pointer */}
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[20px] border-t-red-500 drop-shadow-md"></div>
 
-        {/* Wheel Container */}
-        <div
-            className="w-full h-full rounded-full border-4 border-white shadow-xl overflow-hidden relative transition-transform duration-[4000ms] cubic-bezier(0.25, 0.1, 0.25, 1)"
-            style={{
-                transform: `rotate(-${rotation}deg)`,
-                background: `conic-gradient(${events.map((_, i) => {
-                    const start = (i / events.length) * 100;
-                    const end = ((i + 1) / events.length) * 100;
-                    return `${colors[i % colors.length]} ${start}% ${end}%`;
-                }).join(', ')
-                    })`
-            }}
-        >
-            {/* Labels */}
-            {events.map((event, i) => {
-                const angle = (360 / events.length) * i + (360 / events.length) / 2;
-                return (
+        // Short delay before spin starts
+        const timer = setTimeout(spin, 500);
+        return () => clearTimeout(timer);
+    }, [events]);
+
+    // Auto-close effect
+    useEffect(() => {
+        let autoCloseTimer: ReturnType<typeof setTimeout>;
+
+        if (winner) {
+            // Set a timer to close automatically after 5 seconds
+            autoCloseTimer = setTimeout(() => {
+                onComplete();
+            }, 5000);
+        }
+
+        // Cleanup timer if component unmounts or user closes manually
+        return () => {
+            if (autoCloseTimer) clearTimeout(autoCloseTimer);
+        };
+    }, [winner, onComplete]);
+
+    return (
+        <div className="relative flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-3xl animate-fade-in p-6 shadow-[0_0_40px_rgba(0,0,0,0.5)] border-4 border-white/10">
+
+            {winner ? (
+                // Winner Display
+                <div className="text-center animate-bounce p-4 bg-white rounded-xl border-4 border-yellow-400 shadow-2xl transform scale-110 relative w-64">
+                    <Trophy className="w-12 h-12 mx-auto text-yellow-500 mb-2" />
+                    <h3 className="text-xs font-bold uppercase text-gray-400">Event Unlocked!</h3>
+                    <div className={`text-xl font-black my-2 break-words ${theme === ThemeMode.NEON ? 'text-fuchsia-600' : 'text-indigo-600'}`}>
+                        {winner}
+                    </div>
+
+                    {/* Visual Countdown Timer */}
+                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-3 mb-3">
+                        <div
+                            className="bg-yellow-400 h-full origin-left"
+                            style={{
+                                animation: 'width-shrink 5s linear forwards',
+                                width: '100%'
+                            }}
+                        >
+                            <style>{`
+                                @keyframes width-shrink {
+                                    from { width: 100%; }
+                                    to { width: 0%; }
+                                }
+                            `}</style>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={onComplete}
+                        className="px-6 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-bold text-gray-600 transition-colors"
+                    >
+                        Close Now
+                    </button>
+                </div>
+            ) : (
+                // The Wheel
+                <div className="relative w-64 h-64">
+                    {/* Pointer */}
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[20px] border-t-red-500 drop-shadow-md"></div>
+
+                    {/* Wheel Container */}
                     <div
-                        key={i}
-                        className="absolute w-full text-center top-1/2 left-1/2 text-[10px] font-bold text-black/70"
+                        className="w-full h-full rounded-full border-4 border-white shadow-xl overflow-hidden relative transition-transform duration-[4000ms] cubic-bezier(0.25, 0.1, 0.25, 1)"
                         style={{
-                            transform: `translate(-50%, -50%) rotate(${angle + 90}deg) translate(0, -80px)`,
-                            width: '100px' // Limit width
+                            transform: `rotate(-${rotation}deg)`,
+                            background: `conic-gradient(${events.map((_, i) => {
+                                const start = (i / events.length) * 100;
+                                const end = ((i + 1) / events.length) * 100;
+                                return `${colors[i % colors.length]} ${start}% ${end}%`;
+                            }).join(', ')
+                                })`
                         }}
                     >
-                        <span className="bg-white/30 px-1 rounded backdrop-blur-sm whitespace-nowrap overflow-hidden text-ellipsis block max-w-full">
-                            {event}
-                        </span>
+                        {/* Labels */}
+                        {events.map((event, i) => {
+                            const angle = (360 / events.length) * i + (360 / events.length) / 2;
+                            return (
+                                <div
+                                    key={i}
+                                    className="absolute w-full text-center top-1/2 left-1/2 text-[10px] font-bold text-black/70"
+                                    style={{
+                                        transform: `translate(-50%, -50%) rotate(${angle + 90}deg) translate(0, -80px)`,
+                                        width: '100px' // Limit width
+                                    }}
+                                >
+                                    <span className="bg-white/30 px-1 rounded backdrop-blur-sm whitespace-nowrap overflow-hidden text-ellipsis block max-w-full">
+                                        {event}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
-                );
-            })}
-        </div>
 
-        {/* Center Hub */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-inner z-10 flex items-center justify-center border-2 border-gray-200">
-            <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                    {/* Center Hub */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-inner z-10 flex items-center justify-center border-2 border-gray-200">
+                        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                    </div>
+                </div>
+            )}
         </div>
-    </div>
-)
-}
-        </div >
     );
 };
