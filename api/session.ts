@@ -1,6 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join } from 'path';
 
 interface SessionData {
   settings: any;
@@ -8,13 +6,9 @@ interface SessionData {
   lastUpdated: number;
 }
 
-const DATA_DIR = '/tmp/widget-sessions';
-const getSessionPath = (id: string) => join(DATA_DIR, `${id}.json`);
-
-// Ensure data directory exists
-if (!existsSync(DATA_DIR)) {
-  mkdirSync(DATA_DIR, { recursive: true });
-}
+// Armazenamento em memória (temporário - será substituído por Vercel KV depois)
+// NOTA: Dados são perdidos quando a função é reiniciada, mas funciona para testes
+const sessions = new Map<string, SessionData>();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Enable CORS
@@ -35,14 +29,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Session ID is required' });
       }
 
-      const sessionPath = getSessionPath(id);
-      
-      if (!existsSync(sessionPath)) {
+      const sessionData = sessions.get(id);
+
+      if (!sessionData) {
         return res.status(404).json({ error: 'Session not found' });
       }
 
-      const data = JSON.parse(readFileSync(sessionPath, 'utf-8'));
-      return res.status(200).json(data);
+      return res.status(200).json(sessionData);
     }
 
     // POST - Create new session
@@ -54,8 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         lastUpdated: Date.now(),
       };
 
-      const sessionPath = getSessionPath(sessionId);
-      writeFileSync(sessionPath, JSON.stringify(sessionData, null, 2));
+      sessions.set(sessionId, sessionData);
 
       return res.status(201).json({ sessionId, data: sessionData });
     }
@@ -66,14 +58,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Session ID is required' });
       }
 
-      const sessionPath = getSessionPath(id);
       const sessionData: SessionData = {
         settings: req.body.settings || {},
         donations: req.body.donations || [],
         lastUpdated: Date.now(),
       };
 
-      writeFileSync(sessionPath, JSON.stringify(sessionData, null, 2));
+      sessions.set(id, sessionData);
 
       return res.status(200).json({ success: true, data: sessionData });
     }
@@ -81,7 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     console.error('API Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error', details: String(error) });
   }
 }
 
