@@ -62,8 +62,18 @@ const App: React.FC = () => {
     const [isCelebration, setIsCelebration] = useState(false);
     const [showRoulette, setShowRoulette] = useState(false);
     const [activeReward, setActiveReward] = useState<TrailReward | null>(null);
-    const [socketStatus, setSocketStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+    // Track connection status for each provider independently
+    const [seSocketStatus, setSeSocketStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+    const [lpSocketStatus, setLpSocketStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+    // Derived global status for the UI
+    const socketStatus = (seSocketStatus === 'connected' || lpSocketStatus === 'connected')
+        ? 'connected'
+        : (seSocketStatus === 'connecting' || lpSocketStatus === 'connecting')
+            ? 'connecting'
+            : 'disconnected';
+
     const [debouncedToken, setDebouncedToken] = useState(settings.streamElementsToken);
+    const [debouncedLivePixKey, setDebouncedLivePixKey] = useState(settings.livePixKey);
     const [isOverlayMode, setIsOverlayMode] = useState(false);
     const [sessionId, setSessionId] = useState<string>('');
     const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline'>('offline');
@@ -215,6 +225,11 @@ const App: React.FC = () => {
         return () => clearTimeout(handler);
     }, [settings.streamElementsToken]);
 
+    useEffect(() => {
+        const handler = setTimeout(() => setDebouncedLivePixKey(settings.livePixKey), 1000);
+        return () => clearTimeout(handler);
+    }, [settings.livePixKey]);
+
     // Reset Handler
     const handleFullReset = () => {
         if (window.confirm("Are you sure? This will reset the Current Amount to 0 and clear the Donation History.")) {
@@ -249,26 +264,82 @@ const App: React.FC = () => {
         setActiveReward(null);
     }, []);
 
-    // --- Socket Logic ---
+    // --- Socket Logic (StreamElements) ---
     useEffect(() => {
         const token = debouncedToken;
         if (!token || !(window as any).io) {
-            setSocketStatus('disconnected');
+            setSeSocketStatus('disconnected');
             return;
         }
-        setSocketStatus('connecting');
+
+        setSeSocketStatus('connecting');
+
         const socket = (window as any).io('https://realtime.streamelements.com', { transports: ['websocket'] });
 
         socket.on('connect', () => socket.emit('authenticate', { method: 'jwt', token }));
-        socket.on('authenticated', () => setSocketStatus('connected'));
-        socket.on('unauthorized', () => setSocketStatus('disconnected'));
+        socket.on('authenticated', () => setSeSocketStatus('connected'));
+        socket.on('unauthorized', () => setSeSocketStatus('disconnected'));
         socket.on('event', (data: any) => {
             if (data.type === 'tip') simulateDonation(data.data.amount, data.data.username, data.data.message || '');
         });
-        socket.on('disconnect', () => setSocketStatus('disconnected'));
+        socket.on('disconnect', () => setSeSocketStatus('disconnected'));
 
         return () => socket.disconnect();
     }, [debouncedToken, simulateDonation]);
+
+    // --- Socket Logic (LivePix) ---
+    useEffect(() => {
+        const keyOrUrl = debouncedLivePixKey;
+        if (!keyOrUrl || !(window as any).io) {
+             setLpSocketStatus('disconnected');
+             return;
+        }
+
+        let widgetId = keyOrUrl;
+        // Try to parse URL if it is one
+        if (keyOrUrl.includes('livepix.gg')) {
+            const match = keyOrUrl.match(/alert\/([a-zA-Z0-9-]+)/);
+            if (match && match[1]) {
+                widgetId = match[1];
+            }
+        }
+
+        console.log('[LivePix] Connecting with ID:', widgetId);
+        setLpSocketStatus('connecting');
+
+        // Note: Using the generic socket.io connection logic for LivePix based on community patterns
+        // Usually LivePix widgets use a socket connection to listen for events.
+        const socket = (window as any).io('https://socket.livepix.gg', {
+            transports: ['websocket'],
+            query: {
+                widgetId: widgetId
+            }
+        });
+
+        socket.on('connect', () => {
+            console.log('[LivePix] Connected');
+            setLpSocketStatus('connected');
+        });
+
+        socket.on('donation', (data: any) => {
+            console.log('[LivePix] Donation received:', data);
+            // Verify payload structure (common structure)
+            const amount = parseFloat(data.amount || 0);
+            const username = data.username || 'Anonymous';
+            const message = data.message || '';
+
+            if (amount > 0) {
+                simulateDonation(amount, username, message);
+            }
+        });
+
+        socket.on('disconnect', () => {
+            console.log('[LivePix] Disconnected');
+            setLpSocketStatus('disconnected');
+        });
+
+        return () => socket.disconnect();
+    }, [debouncedLivePixKey, simulateDonation]);
 
     const getPositionClasses = (pos: WidgetPosition) => {
         switch (pos) {
