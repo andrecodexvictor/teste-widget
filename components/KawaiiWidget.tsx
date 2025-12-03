@@ -76,7 +76,7 @@ const RewardAlert: React.FC<{ reward: TrailReward, onComplete: () => void }> = (
                 </div>
                 <div className="text-3xl mb-1">🎁</div>
                 <div className="font-black text-xl text-gray-800 leading-tight">{reward.label}</div>
-                <div className="text-xs text-yellow-600 font-bold mt-1">Goal Reached: {reward.amount}</div>
+                <div className="text-xs text-yellow-600 font-bold mt-1">Goal Reached: {reward.amount.toFixed(2)}</div>
             </div>
         </div>
     );
@@ -106,7 +106,7 @@ const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: st
                     </div>
                     <div className="text-xl text-white mt-2 flex items-center justify-center gap-2">
                         <Star className="text-yellow-400 animate-spin" size={24} fill="currentColor" />
-                        {currency}{amount}
+                        {currency}{amount.toFixed(2)}
                         <Star className="text-yellow-400 animate-spin" size={24} fill="currentColor" />
                     </div>
                 </div>
@@ -127,7 +127,7 @@ const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: st
                         <div className="text-xl text-fuchsia-300">JACKPOT: {jackpotLabel || "TARGET ACQUIRED"}</div>
                     </div>
                     <div className="text-3xl text-white animate-pulse">
-                        {currency}{amount}
+                        {currency}{amount.toFixed(2)}
                     </div>
                 </div>
                 
@@ -160,7 +160,7 @@ const GrandCelebration: React.FC<{ theme: ThemeMode, title: string, currency: st
                  </div>
 
                  <div className="mt-2 text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500">
-                     {currency}{amount}
+                     {currency}{amount.toFixed(2)}
                  </div>
              </div>
 
@@ -254,7 +254,7 @@ const ProgressBar: React.FC<{
                         key={reward.id}
                         className="absolute top-1/2 -translate-y-1/2 z-10 transition-all duration-300"
                         style={{ left: `${posPercent}%` }}
-                        title={`${reward.label} (${settings.currency}${reward.amount})`}
+                        title={`${reward.label} (${settings.currency}${reward.amount.toFixed(2)})`}
                     >
                         {/* The Marker Icon */}
                         <div className={`
@@ -769,12 +769,12 @@ export const KawaiiWidget: React.FC<{
                                             'text-indigo-400 bg-white/50 px-1.5 py-0.5 rounded-full'
                                         }`}>
                                             <Lock size={10} />
-                                            <span>Next: {nextTrailReward.label} ({currency}{nextTrailReward.amount})</span>
+                                            <span>Next: {nextTrailReward.label} ({currency}{nextTrailReward.amount.toFixed(2)})</span>
                                         </div>
                                     )}
                                 </div>
                                 <span className={getValueClass()}>
-                                    {currency}{currentAmount} <span className="text-[0.8em] opacity-70">/ {currency}{goalAmount}</span>
+                                    {currency}{currentAmount.toFixed(2)} <span className="text-[0.8em] opacity-70">/ {currency}{goalAmount.toFixed(2)}</span>
                                 </span>
                             </div>
                         </div>
@@ -785,7 +785,7 @@ export const KawaiiWidget: React.FC<{
                                 <div className="flex items-center gap-2 overflow-hidden">
                                     <Heart size={14} className={`${theme === ThemeMode.NEON ? 'text-fuchsia-500' : 'text-pink-400'} animate-pulse`} fill="currentColor" />
                                     <div className="text-xs font-bold text-gray-500 whitespace-nowrap animate-marquee">
-                                        Latest: <span className={`${theme === ThemeMode.NEON ? 'text-cyan-400' : 'text-indigo-500'}`}>{donations[0].username}</span> - {currency}{donations[0].amount} "{donations[0].message}"
+                                        Latest: <span className={`${theme === ThemeMode.NEON ? 'text-cyan-400' : 'text-indigo-500'}`}>{donations[0].username}</span> - {currency}{donations[0].amount.toFixed(2)} "{donations[0].message}"
                                     </div>
                                 </div>
                             </div>
@@ -827,7 +827,7 @@ export const KawaiiWidget: React.FC<{
                                      color: settings.useCustomTitleColor ? settings.customTitleColor : undefined 
                                 }}
                              >
-                                {currency}{currentAmount} <span className="opacity-80">/ {currency}{goalAmount}</span>
+                                {currency}{currentAmount.toFixed(2)} <span className="opacity-80">/ {currency}{goalAmount.toFixed(2)}</span>
                             </div>
                         </div>
                         
